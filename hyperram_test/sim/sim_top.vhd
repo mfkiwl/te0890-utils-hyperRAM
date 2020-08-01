@@ -33,7 +33,7 @@ begin
 
     clk100 <= (not clk100) after 5 ns;
 
-    inst_top: entity work.memtest_top
+    inst_top: entity work.hyperram_test_top
         port map (
             clk_100m_pin    => clk100,
             led1            => s_led1,
