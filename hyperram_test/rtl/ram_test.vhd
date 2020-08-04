@@ -124,6 +124,7 @@ architecture arch_ram_test of ram_test is
         State_Elem3Read,
         State_Elem3Write,
         State_EndBurstLen,
+        State_ReportError,
         State_EndPattern,
         State_EndRound );
 
@@ -153,6 +154,12 @@ architecture arch_ram_test of ram_test is
         byte_addr:      unsigned(address_bits downto 0);
         rdata_fifolen:  unsigned(2 downto 0);
         rdata_fifo:     std_logic_vector(23 downto 0);
+        err_flag:       std_logic;
+        err_phase:      std_logic_vector(1 downto 0);
+        err_addr:       std_logic_vector(address_bits-1 downto 0);
+        err_mask:       std_logic_vector(1 downto 0);
+        err_expect:     std_logic_vector(15 downto 0);
+        err_rdata:      std_logic_vector(15 downto 0);
     end record;
 
     -- Power-on initialization of internal registers.
@@ -180,7 +187,13 @@ architecture arch_ram_test of ram_test is
         burst_end       => (others => '0'),
         byte_addr       => (others => '0'),
         rdata_fifolen   => (others => '0'),
-        rdata_fifo      => (others => '0') );
+        rdata_fifo      => (others => '0'),
+        err_flag        => '0',
+        err_phase       => (others => '0'),
+        err_addr        => (others => '0'),
+        err_mask        => (others => '0'),
+        err_expect      => (others => '0'),
+        err_rdata       => (others => '0') );
 
     -- Internal registers.
     signal r:               regs_type := regs_init;
@@ -209,6 +222,26 @@ begin
         -- New register values.
         variable v: regs_type := r;
 
+        procedure LogError(underrun: std_logic;
+                           mask: std_logic_vector;
+                           expect_data: std_logic_vector;
+                           rdata: std_logic_vector) is
+        begin
+            if r.err_flag = '0' then
+                v.err_flag      := '1';
+                v.err_phase(1)  := underrun;
+                if (r.state = State_Elem2Read) or (r.state = State_Elem2Write) then
+                    v.err_phase(0)  := '0';
+                else
+                    v.err_phase(0)  := '1';
+                end if;
+                v.err_addr      := std_logic_vector(r.byte_addr(address_bits downto 1));
+                v.err_mask      := mask;
+                v.err_expect    := expect_data;
+                v.err_rdata     := rdata;
+            end if;
+        end procedure;
+
         -- Check read response against expected pattern.
         procedure Check_ReadResponse is
             variable v_rdata_invert: std_logic := '0';
@@ -222,6 +255,7 @@ begin
                 if r.rdata_fifolen = 0 then
                     -- Got unexpected read response.
                     v.fail_count_inc := '1';
+                    LogError('1', "00", x"0000", ram_rsp_rdata);
                 else
                     -- Get one expected pattern from the FIFO.
                     v_rdata_invert  := r.rdata_fifo(3 * to_integer(r.rdata_fifolen) - 1);
@@ -235,7 +269,8 @@ begin
                     end if;
                     if ((v_rdata_mask(0) = '1') and (ram_rsp_rdata(7 downto 0) /= v_expect_rdata(7 downto 0))) or
                        ((v_rdata_mask(1) = '1') and (ram_rsp_rdata(15 downto 8) /= v_expect_rdata(15 downto 8))) then
-                       v.fail_count_inc := '1';
+                        v.fail_count_inc := '1';
+                        LogError('0', v_rdata_mask, v_expect_rdata, ram_rsp_rdata);
                     end if;
                 end if;
             end if;
@@ -347,6 +382,7 @@ begin
             v.burst_addr    := (others => '0');
             v.burst_end     := resize(r.burstlen - 1, v.burst_end'length);
             v.byte_addr     := (others => '0');
+            v.err_flag      := '0';
 
             -- Write "B=nnn " to debug output.
             v.msg_valid     := '1';
@@ -554,12 +590,60 @@ begin
             v.cmd_valid     := r.cmd_valid and (not ram_cmd_ready);
             if (r.cmd_valid = '0') and (r.rdata_fifolen = 0) then
                 -- Go to the next burst length or end the current pattern.
-                v.burstlen_index := r.burstlen_index + 1;
-                if r.burstlen_index < burst_length_table'high then
-                    v.state     := State_NewBurstLen;
+                if r.err_flag = '1' then
+                    v.state     := State_ReportError;
                 else
-                    v.state     := State_EndPattern;
+                    v.burstlen_index := r.burstlen_index + 1;
+                    if r.burstlen_index < burst_length_table'high then
+                        v.state     := State_NewBurstLen;
+                    else
+                        v.state     := State_EndPattern;
+                    end if;
                 end if;
+            end if;
+        end procedure;
+
+        procedure Handle_ReportError is
+        begin
+            -- Write "E=n-nnnnnn-n-nnnn-nnnn " to debug output.
+            v.msg_valid     := '1';
+            if (r.msg_valid = '0') or (msg_ready = '1') then
+                v.index         := r.index + 1;
+                v.msg_data      := hexdigit(r.hexshift(r.hexshift'high downto r.hexshift'high-3));
+                v.hexshift      := r.hexshift(r.hexshift'high-4 downto 0) & "0000";
+                case to_integer(r.index) is
+                    when 0 =>
+                        v.msg_data      := x"45";  -- 'E'
+                    when 1 =>
+                        v.msg_data      := x"3D";  -- '='
+                        v.hexshift(31 downto 28) := "00" & r.err_phase;
+                    when 3 =>
+                        v.msg_data      := x"2D";  -- '-'
+                        v.hexshift(31 downto 8) := (others => '0');
+                        v.hexshift(address_bits+7 downto 8) := r.err_addr;
+                    when 10 =>
+                        v.msg_data      := x"2D";  -- '-'
+                        v.hexshift(31 downto 28) := "00" & r.err_mask;
+                    when 12 =>
+                        v.msg_data      := x"2D";  -- '-'
+                        v.hexshift(31 downto 16) := r.err_expect;
+                    when 17 =>
+                        v.msg_data      := x"2D";  -- '-'
+                        v.hexshift(31 downto 16) := r.err_rdata;
+                    when 22 =>
+                        v.msg_data      := x"20";  -- ' '
+                    when 23 =>
+                        v.msg_valid     := '0';
+                        v.burstlen_index := r.burstlen_index + 1;
+                        v.index         := (others => '0');
+                        if r.burstlen_index < burst_length_table'high then
+                            v.state     := State_NewBurstLen;
+                        else
+                            v.state     := State_EndPattern;
+                        end if;
+                    when others =>
+                        null;
+                end case;
             end if;
         end procedure;
 
@@ -658,6 +742,8 @@ begin
                     Handle_Elem3Write;
                 when State_EndBurstLen =>
                     Handle_EndBurstLen;
+                when State_ReportError =>
+                    Handle_ReportError;
                 when State_EndPattern =>
                     Handle_EndPattern;
                 when State_EndRound =>

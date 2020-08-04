@@ -67,6 +67,13 @@ The meaning of the messages is as follows:
   F=nnnnnnnn : Total number of faults detected up to this point.
   P=nnnn     : Start testing with the displayed test pattern.
   B=nnn      : Start testing with the displayed burst length.
+  E=a-bbbbbb-c-dddd-eeee : Describes the first error detected at the
+               current burst length.
+               a      = 0 or 1 to indicate error in march element 2 or 3
+               bbbbbb = approximate word address where error occured
+               c      = byte mask
+               dddd   = expected data
+               eeee   = actual read data
 
 
   Simulation
