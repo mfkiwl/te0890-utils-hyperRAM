@@ -16,6 +16,11 @@ It will probably not work at other clock frequencies, or on other
 boards than the TE0890. The test design runs at 100 MHz from
 the on-board oscillator.
 
+WARNING: This design currently shows failures on my TE0890 board.
+It may run without errors for several hours, but produces bursts
+of errors typically about once every 10 hours.
+I'm desperately trying to find the cause of these failures.
+
 
   Test method
   -----------
@@ -32,6 +37,9 @@ The test is performed with different test patterns and at different
 burst sizes. Testing with different burst sizes is important because
 the burst logic of the HyperRAM interface core is quite complicated.
 
+In addition to fixed 16-bit test patterns, the test is also done
+with a random sequence of data words.
+
 
   Usage
   -----
@@ -46,7 +54,7 @@ The memory test shows its status on the two LEDs:
                has completed at least one full round of the test.
 
 If everything works well, the green LED should turn on after
-running for about 90 seconds.
+running for about 70 seconds.
 
 The test progress can be monitored by attaching an FTDI-USB cable
 to the FTDI header of the TE0890 board. The test driver outputs
@@ -67,7 +75,7 @@ The meaning of the messages is as follows:
   F=nnnnnnnn : Total number of faults detected up to this point.
   P=nnnn     : Start testing with the displayed test pattern.
   B=nnn      : Start testing with the displayed burst length.
-  E=a-bbbbbb-c-dddd-eeee : Describes the first error detected at the
+  E=a-bbbbbb-c-dddd-eeee : Describes the first few errors detected at the
                current burst length.
                a      = 0 or 1 to indicate error in march element 2 or 3
                bbbbbb = approximate word address where error occured

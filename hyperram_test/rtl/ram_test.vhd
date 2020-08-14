@@ -12,8 +12,7 @@
 -- with a pattern, which is then read back while writing the bit-inverted
 -- pattern. One round of the test sequence consists of the following steps:
 --
---   For each pattern in [0x0000, 0xff00, 0xaa55, 0xcc33, 0xf00f,
---                        0xb5c4, 0xa372, 0x1d95]:
+--   For each pattern in [0x0000, 0xff00, 0xaa55, 0xcc33, 0xf00f, 0xb5c4]:
 --       For each burst_length in [ 1, 2, 3, 4, 5, 16, 512]:
 --           View the memory as k groups of burst_length 8-bit bytes.
 --           Walk through the memory in incrementing address order:
@@ -25,6 +24,9 @@
 --               Read burst_length bytes and verify the bit-inverted pattern.
 --               Overwrite the same bytes with the non-inverted pattern.
 --               (Use incrementing addresses within each burst.)
+--   Finally, test each burst_length with a pseudo-random pattern.
+--       Only incrementing address order is used in this case.
+--       The march elements for pseudo-random data are up(wX) ; up(rX, wY) ; up(rY).
 --
 
 
@@ -99,17 +101,24 @@ architecture arch_ram_test of ram_test is
         1, 2, 3, 4, 5, 16, 63, 512 );
 
     -- Test data pattern.
-    type test_data_type is
+    -- Patterns 0 to 4 are fixed 16-bit patterns.
+    -- Patterns 5 and 6 use pseudo-random data.
+    type test_pattern_type is
         array(natural range <>) of std_logic_vector(15 downto 0);
-    constant test_data: test_data_type(0 to 7) := (
+    constant test_pattern_data: test_pattern_type(0 to 6) := (
         x"0000",
         x"ff00",
         x"aa55",
         x"cc33",
         x"f00f",
-        x"b5c4",
-        x"a372",
-        x"1d95" );
+        x"0000",
+        x"0000" );
+    constant test_pattern_random: std_logic_vector(6 downto 0) := "1100000";
+
+    -- RAM for error logging
+    constant error_mem_databits: integer := 2 + address_bits + 2 + 16 + 16;
+    type error_mem_type is array(0 to 63) of std_logic_vector(error_mem_databits-1 downto 0);
+    signal error_mem: error_mem_type;
 
     -- Main state machine.
     type state_type is (
@@ -118,11 +127,13 @@ architecture arch_ram_test of ram_test is
         State_NewRound,
         State_NewPattern,
         State_NewBurstLen,
-        State_Elem1Write,
-        State_Elem2Read,
-        State_Elem2Write,
-        State_Elem3Read,
-        State_Elem3Write,
+        State_StartMarch,
+        State_MarchUpW0,
+        State_MarchUpR0,
+        State_MarchUpW1,
+        State_MarchDownR1,
+        State_MarchDownW0,
+        State_MarchUpR1,
         State_EndBurstLen,
         State_ReportError,
         State_EndPattern,
@@ -148,18 +159,22 @@ architecture arch_ram_test of ram_test is
         pattern_index:  unsigned(2 downto 0);
         burstlen_index: unsigned(2 downto 0);
         pattern:        std_logic_vector(15 downto 0);
+        invert_pattern: std_logic;
+        invert_prev:    std_logic;
+        random_pattern: std_logic;
+        march_active:   std_logic;
+        march_write:    std_logic;
         burstlen:       unsigned(9 downto 0);
         burst_addr:     unsigned(address_bits downto 0);
         burst_end:      unsigned(address_bits downto 0);
         byte_addr:      unsigned(address_bits downto 0);
         rdata_fifolen:  unsigned(2 downto 0);
-        rdata_fifo:     std_logic_vector(23 downto 0);
-        err_flag:       std_logic;
-        err_phase:      std_logic_vector(1 downto 0);
-        err_addr:       std_logic_vector(address_bits-1 downto 0);
-        err_mask:       std_logic_vector(1 downto 0);
-        err_expect:     std_logic_vector(15 downto 0);
-        err_rdata:      std_logic_vector(15 downto 0);
+        rdata_fifo:     std_logic_vector(20 downto 0);
+        errmem_write:   std_logic;
+        errmem_waddr:   unsigned(5 downto 0);
+        errmem_raddr:   unsigned(5 downto 0);
+        errmem_wdata:   std_logic_vector(error_mem_databits-1 downto 0);
+        errmem_rdata:   std_logic_vector(error_mem_databits-1 downto 0);
     end record;
 
     -- Power-on initialization of internal registers.
@@ -182,23 +197,65 @@ architecture arch_ram_test of ram_test is
         pattern_index   => (others => '0'),
         burstlen_index  => (others => '0'),
         pattern         => (others => '0'),
+        invert_pattern  => '0',
+        invert_prev     => '0',
+        random_pattern  => '0',
+        march_active    => '0',
+        march_write     => '0',
         burstlen        => (others => '0'),
         burst_addr      => (others => '0'),
         burst_end       => (others => '0'),
         byte_addr       => (others => '0'),
         rdata_fifolen   => (others => '0'),
         rdata_fifo      => (others => '0'),
-        err_flag        => '0',
-        err_phase       => (others => '0'),
-        err_addr        => (others => '0'),
-        err_mask        => (others => '0'),
-        err_expect      => (others => '0'),
-        err_rdata       => (others => '0') );
+        errmem_write    => '0',
+        errmem_waddr    => (others => '0'),
+        errmem_raddr    => (others => '0'),
+        errmem_wdata    => (others => '0'),
+        errmem_rdata    => (others => '0') );
 
     -- Internal registers.
     signal r:               regs_type := regs_init;
 
+    -- Signals to random generator.
+    signal s_rng_wr_ready:  std_logic;
+    signal s_rng_rd_ready:  std_logic;
+    signal s_rng_wr_data:   std_logic_vector(31 downto 0);
+    signal s_rng_rd_data:   std_logic_vector(31 downto 0);
+
 begin
+
+    --
+    -- Random generators.
+    --
+    inst_random_wr: entity work.random_gen
+        generic map (
+            init_seed   => x"c90fdaa22168c234c4c6628b80dc1cd1" )
+        port map (
+            clk         => clk,
+            rst         => rst,
+            out_ready   => s_rng_wr_ready,
+            out_valid   => open,
+            out_data    => s_rng_wr_data );
+
+    inst_random_rd: entity work.random_gen
+        generic map (
+            init_seed   => x"c90fdaa22168c234c4c6628b80dc1cd1" )
+        port map (
+            clk         => clk,
+            rst         => rst,
+            out_ready   => s_rng_rd_ready,
+            out_valid   => open,
+            out_data    => s_rng_rd_data );
+
+    -- Fetch a new random word whenever we start a random write transaction.
+    s_rng_wr_ready  <= r.march_active and
+                       r.march_write and
+                       r.random_pattern and
+                       ((not r.cmd_valid) or ram_cmd_ready);
+
+    -- Fetch a new random word whenever we verify a random read data word.
+    s_rng_rd_ready  <= r.random_pattern and ram_rsp_valid;
 
     --
     -- Drive outputs.
@@ -222,62 +279,110 @@ begin
         -- New register values.
         variable v: regs_type := r;
 
-        procedure LogError(underrun: std_logic;
-                           mask: std_logic_vector;
-                           expect_data: std_logic_vector;
-                           rdata: std_logic_vector) is
-        begin
-            if r.err_flag = '0' then
-                v.err_flag      := '1';
-                v.err_phase(1)  := underrun;
-                if (r.state = State_Elem2Read) or (r.state = State_Elem2Write) then
-                    v.err_phase(0)  := '0';
-                else
-                    v.err_phase(0)  := '1';
-                end if;
-                v.err_addr      := std_logic_vector(r.byte_addr(address_bits downto 1));
-                v.err_mask      := mask;
-                v.err_expect    := expect_data;
-                v.err_rdata     := rdata;
-            end if;
-        end procedure;
-
         -- Check read response against expected pattern.
-        procedure Check_ReadResponse is
+        procedure CheckReadResponse is
+            variable v_march_phase:  std_logic := '0';
+            variable v_rdata_valid:  std_logic := '0';
             variable v_rdata_invert: std_logic := '0';
             variable v_rdata_mask:   std_logic_vector(1 downto 0) := "00";
             variable v_expect_rdata: std_logic_vector(15 downto 0) := (others => '0');
         begin
             -- Assume no failure.
             v.fail_count_inc := '0';
+            v.errmem_write   := '0';
 
+            -- Figure out which of the two march elements this read belongs to.
+            -- Note the last few reads from MarchUpR0 can be mis-attributed to MarchDownR1.
+            if (r.state = State_MarchUpR0) or (r.state = State_MarchUpW1) then
+                v_march_phase  := '0';
+            else
+                v_march_phase  := '1';
+            end if;
+
+            -- Get next expected pattern from the FIFO (if non-empty).
+            if r.rdata_fifolen > 0 then
+                v_rdata_valid   := '1';
+                v_rdata_invert  := r.rdata_fifo(3 * to_integer(r.rdata_fifolen) - 1);
+                v_rdata_mask    := r.rdata_fifo(3 * to_integer(r.rdata_fifolen) - 2 downto 3 * to_integer(r.rdata_fifolen) - 3);
+            end if;
+
+            -- Determine expected read data word (if read FIFO non-empty).
+            if r.random_pattern = '1' then
+                v_expect_rdata  := s_rng_rd_data(31 downto 16);
+            elsif v_rdata_invert = '1' then
+                v_expect_rdata  := not r.pattern;
+            else
+                v_expect_rdata  := r.pattern;
+            end if;
+
+            -- Check read response data.
             if ram_rsp_valid = '1' then
                 if r.rdata_fifolen = 0 then
                     -- Got unexpected read response.
                     v.fail_count_inc := '1';
-                    LogError('1', "00", x"0000", ram_rsp_rdata);
+                    v.errmem_write   := '1';
                 else
-                    -- Get one expected pattern from the FIFO.
-                    v_rdata_invert  := r.rdata_fifo(3 * to_integer(r.rdata_fifolen) - 1);
-                    v_rdata_mask    := r.rdata_fifo(3 * to_integer(r.rdata_fifolen) - 2 downto 3 * to_integer(r.rdata_fifolen) - 3);
-                    v.rdata_fifolen := r.rdata_fifolen - 1;
-                    -- Check read response against expected pattern.
-                    if v_rdata_invert = '1' then
-                        v_expect_rdata  := not r.pattern;
-                    else
-                        v_expect_rdata  := r.pattern;
-                    end if;
+                    v.rdata_fifolen := v.rdata_fifolen - 1;
                     if ((v_rdata_mask(0) = '1') and (ram_rsp_rdata(7 downto 0) /= v_expect_rdata(7 downto 0))) or
                        ((v_rdata_mask(1) = '1') and (ram_rsp_rdata(15 downto 8) /= v_expect_rdata(15 downto 8))) then
                         v.fail_count_inc := '1';
-                        LogError('0', v_rdata_mask, v_expect_rdata, ram_rsp_rdata);
+                        v.errmem_write   := '1';
                     end if;
                 end if;
+            end if;
+
+            -- Push new read transactions into the verify FIFO.
+            if r.cmd_valid = '1' and ram_cmd_ready = '1' and r.cmd_write = '0' then
+                v.rdata_fifolen := v.rdata_fifolen + 1;
+                v.rdata_fifo    := r.rdata_fifo(r.rdata_fifo'high-3 downto 0) & r.invert_prev & r.cmd_wmask;
             end if;
 
             -- Update fail counter.
             if r.fail_count_inc = '1' then
                 v.fail_count := r.fail_count + 1;
+            end if;
+
+            -- Prepare data to push into the error log.
+            v.errmem_wdata(1+address_bits+2+16+16)  := not v_rdata_valid;
+            v.errmem_wdata(address_bits+2+16+16)    := v_march_phase;
+            v.errmem_wdata(address_bits-1+2+16+16 downto 2+16+16) := std_logic_vector(r.byte_addr(address_bits downto 1));
+            v.errmem_wdata(1+16+16 downto 16+16)    := v_rdata_mask;
+            v.errmem_wdata(15+16 downto 16)         := v_expect_rdata;
+            v.errmem_wdata(15 downto 0)             := ram_rsp_rdata;
+
+            -- Update error log pointer.
+            if (r.errmem_write = '1') and (r.errmem_waddr < error_mem'high) then
+                v.errmem_waddr := r.errmem_waddr + 1;
+            end if;
+        end procedure;
+
+        -- Push transactions to the HyperRAM controller.
+        procedure DriveMemTransaction is
+        begin
+            v.cmd_valid     := r.march_active;
+            if (r.march_active = '1') and ((r.cmd_valid = '0') or (ram_cmd_ready = '1')) then
+
+                -- Start a new transaction.
+                v.cmd_write     := r.march_write;
+                v.cmd_addr      := std_logic_vector(r.byte_addr(r.byte_addr'high downto 1));
+                if r.random_pattern = '1' then
+                    v.cmd_wdata     := s_rng_wr_data(31 downto 16);
+                elsif r.invert_pattern = '1' then
+                    v.cmd_wdata     := not r.pattern;
+                else
+                    v.cmd_wdata     := r.pattern;
+                end if;
+                if r.byte_addr(0) = '1' then
+                    v.cmd_wmask     := "01";  -- burst starts on odd byte address
+                elsif r.byte_addr = r.burst_end then
+                    v.cmd_wmask     := "10";  -- burst ends on odd byte address
+                else
+                    v.cmd_wmask     := "11";
+                end if;
+
+                -- Keep track of whether the new transaction uses an inverted pattern.
+                -- This is important for verifying read data.
+                v.invert_prev   := r.invert_pattern;
             end if;
         end procedure;
 
@@ -289,6 +394,7 @@ begin
             v.fail_count    := (others => '0');
             v.fail_count_inc := '0';
             v.round_count   := (others => '0');
+            v.march_active  := '0';
             v.rdata_fifolen := (others => '0');
         end procedure;
 
@@ -364,6 +470,10 @@ begin
                     when 1 =>
                         v.msg_data      := x"3D";  -- '='
                         v.hexshift(31 downto 16) := r.pattern;
+                    when 2 | 3 | 4 | 5 =>
+                        if r.random_pattern = '1' then
+                            v.msg_data := x"72";  -- 'r'
+                        end if;
                     when 6 =>
                         v.msg_data      := x"20";  -- ' '
                     when 7 =>
@@ -379,11 +489,6 @@ begin
         -- Prepare to test a new burst length.
         procedure Handle_NewBurstLen is
         begin
-            v.burst_addr    := (others => '0');
-            v.burst_end     := resize(r.burstlen - 1, v.burst_end'length);
-            v.byte_addr     := (others => '0');
-            v.err_flag      := '0';
-
             -- Write "B=nnn " to debug output.
             v.msg_valid     := '1';
             if (r.msg_valid = '0') or (msg_ready = '1') then
@@ -400,43 +505,50 @@ begin
                         v.msg_data      := x"20";  -- ' '
                     when 6 =>
                         v.msg_valid     := '0';
-                        v.state         := State_Elem1Write;
+                        v.state         := State_StartMarch;
                     when others =>
                         null;
                 end case;
             end if;
         end procedure;
 
-        -- Execute march element 1: up(w0).
-        procedure Handle_Elem1Write is
+        -- Start the march sequence.
+        procedure Handle_StartMarch is
         begin
-            v.cmd_valid     := '1';
+            -- Clear error log.
+            v.errmem_waddr  := (others => '0');
+            v.errmem_raddr  := (others => '0');
+
+            -- Prepare to start element up(w0).
+            v.burst_addr    := (others => '0');
+            v.burst_end     := resize(r.burstlen - 1, v.burst_end'length);
+            v.byte_addr     := (others => '0');
+            v.march_active  := '1';
+            v.march_write   := '1';
+            v.invert_pattern := '0';
+            v.state         := State_MarchUpW0;
+        end procedure;
+
+        -- Execute march element up(w0).
+        procedure Handle_MarchUpW0 is
+        begin
             if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
-                -- Start a new write transaction.
-                v.cmd_write     := '1';
-                v.cmd_addr      := std_logic_vector(r.byte_addr(r.byte_addr'high downto 1));
-                v.cmd_wdata     := r.pattern;
-                if r.byte_addr(0) = '1' then
-                    v.cmd_wmask     := "01";  -- burst starts on odd byte address
-                elsif r.byte_addr = r.burst_end then
-                    v.cmd_wmask     := "10";  -- burst ends on odd byte address
-                else
-                    v.cmd_wmask     := "11";
-                end if;
                 -- Update address.
                 if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
-                    -- End burst.
+                    -- Handle end of burst.
                     if r.burst_end + r.burstlen >= r.burstlen then
                         -- Continue with next burst.
                         v.burst_addr    := r.burst_end + 1;
                         v.burst_end     := r.burst_end + r.burstlen;
                         v.byte_addr     := r.burst_end + 1;
                     else
-                        -- Go to the next march element.
+                        -- Go to march element up(r0, w1).
                         v.burst_addr    := (others => '0');
                         v.burst_end     := resize(r.burstlen - 1, v.burst_end'length);
                         v.byte_addr     := (others => '0');
-                        v.state         := State_Elem2Read;
+                        v.march_write   := '0';
+                        v.invert_pattern := '0';
+                        v.state         := State_MarchUpR0;
                     end if;
                 else
                     -- Continue burst.
@@ -445,32 +557,17 @@ begin
             end if;
         end procedure;
 
-        -- Execute the read phase of march element 2: up(r0, w1).
-        procedure Handle_Elem2Read is
-            variable v_rdata_invert: std_logic := '0';
-            variable v_rdata_mask:   std_logic_vector(1 downto 0) := "11";
+        -- Execute the read phase of march element up(r0, w1).
+        procedure Handle_MarchUpR0 is
         begin
-            v.cmd_valid     := '1';
             if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
-                -- Start a new read transaction.
-                v.cmd_write     := '0';
-                v.cmd_addr      := std_logic_vector(r.byte_addr(r.byte_addr'high downto 1));
-                -- Add exected result to read FIFO.
-                v_rdata_invert  := '0';  -- expect non-inverted pattern
-                if r.byte_addr(0) = '1' then
-                    v_rdata_mask    := "01";  -- ignore first byte
-                elsif r.byte_addr = r.burst_end then
-                    v_rdata_mask    := "10";  -- ignore second byte
-                else
-                    v_rdata_mask    := "11";
-                end if;
-                v.rdata_fifolen := v.rdata_fifolen + 1;
-                v.rdata_fifo    := r.rdata_fifo(r.rdata_fifo'high-3 downto 0) & v_rdata_invert & v_rdata_mask;
                 -- Update address.
                 if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
-                    -- End burst; go to the write phase.
+                    -- End burst; go to the write phase of this march element.
                     v.byte_addr     := r.burst_addr;
-                    v.state         := State_Elem2Write;
+                    v.march_write   := '1';
+                    v.invert_pattern := '1';
+                    v.state         := State_MarchUpW1;
                 else
                     -- Continue burst.
                     v.byte_addr     := shift_left(shift_right(r.byte_addr, 1) + 1, 1);
@@ -478,103 +575,105 @@ begin
             end if;
         end procedure;
 
-        -- Execute the write phase of march element 2: up(r0, w1).
-        procedure Handle_Elem2Write is
+        -- Execute the write phase of march element up(r0, w1).
+        procedure Handle_MarchUpW1 is
         begin
-            v.cmd_valid     := '1';
             if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
-                -- Start a new write transaction.
-                v.cmd_write     := '1';
-                v.cmd_addr      := std_logic_vector(r.byte_addr(r.byte_addr'high downto 1));
-                v.cmd_wdata     := not r.pattern;
-                if r.byte_addr(0) = '1' then
-                    v.cmd_wmask     := "01";  -- burst starts on odd byte address
-                elsif r.byte_addr = r.burst_end then
-                    v.cmd_wmask     := "10";  -- burst ends on odd byte address
-                else
-                    v.cmd_wmask     := "11";
-                end if;
-                -- Update address.
                 if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
                     -- End burst.
+                    if r.burst_end + r.burstlen >= r.burstlen then
+                        -- Continue with read phase of the next burst.
+                        v.burst_addr    := r.burst_end + 1;
+                        v.burst_end     := r.burst_end + r.burstlen;
+                        v.byte_addr     := r.burst_end + 1;
+                        v.march_write   := '0';
+                        v.invert_pattern := '0';
+                        v.state         := State_MarchUpR0;
+                    else
+                        -- Go to the next march element.
+                        if r.random_pattern = '1' then
+                            -- Go to march element up(r1).
+                            v.burst_addr    := (others => '0');
+                            v.burst_end     := resize(r.burstlen - 1, v.burst_end'length);
+                            v.byte_addr     := (others => '0');
+                            v.march_write   := '0';
+                            v.invert_pattern := '1';
+                            v.state         := State_MarchUpR1;
+                        else
+                            -- Go to march element down(r1, w0).
+                            -- Start at the end of RAM (the burst address we just reached).
+                            v.byte_addr     := r.burst_addr;
+                            v.march_write   := '0';
+                            v.invert_pattern := '1';
+                            v.state         := State_MarchDownR1;
+                        end if;
+                    end if;
+                else
+                    -- Continue burst.
+                    v.byte_addr     := shift_left(shift_right(r.byte_addr, 1) + 1, 1);
+                end if;
+            end if;
+        end procedure;
+
+        -- Execute the read phase of march element down(r1, w0).
+        procedure Handle_MarchDownR1 is
+        begin
+            if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
+                if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
+                    -- End burst; go to the write phase of this march element.
+                    v.byte_addr     := r.burst_addr;
+                    v.march_write   := '1';
+                    v.invert_pattern := '0';
+                    v.state         := State_MarchDownW0;
+                else
+                    -- Continue burst.
+                    v.byte_addr     := shift_left(shift_right(r.byte_addr, 1) + 1, 1);
+                end if;
+            end if;
+        end procedure;
+
+        -- Execute the write phase of march element down(r1, w0).
+        procedure Handle_MarchDownW0 is
+        begin
+            if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
+                if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
+                    -- End burst.
+                    if r.burst_addr > 0 then
+                        -- Continue with read phase of the next burst.
+                        v.burst_addr    := r.burst_addr - r.burstlen;
+                        v.burst_end     := r.burst_addr - 1;
+                        v.byte_addr     := r.burst_addr - r.burstlen;
+                        v.state         := State_MarchDownR1;
+                    else
+                        -- End march.
+                        v.state         := State_EndBurstLen;
+                        v.march_active  := '0';
+                    end if;
+                else
+                    -- Continue burst.
+                    v.byte_addr     := shift_left(shift_right(r.byte_addr, 1) + 1, 1);
+                end if;
+            end if;
+        end procedure;
+
+        -- Execute march element up(r1).
+        procedure Handle_MarchUpR1 is
+        begin
+            -- This march element is instead of down(r1, w0) when using a random data pattern,
+            -- because we can generate the random data pattern in reverse order.
+            if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
+                -- Update address.
+                if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
+                    -- Handle end of burst.
                     if r.burst_end + r.burstlen >= r.burstlen then
                         -- Continue with next burst.
                         v.burst_addr    := r.burst_end + 1;
                         v.burst_end     := r.burst_end + r.burstlen;
                         v.byte_addr     := r.burst_end + 1;
-                        v.state         := State_Elem2Read;
-                    else
-                        -- Go to the next march element.
-                        v.byte_addr     := r.burst_addr;
-                        v.state         := State_Elem3Read;
-                    end if;
-                else
-                    -- Continue burst.
-                    v.byte_addr     := shift_left(shift_right(r.byte_addr, 1) + 1, 1);
-                end if;
-            end if;
-        end procedure;
-
-        -- Execute the read phase of march element 3: down(r1, w0).
-        procedure Handle_Elem3Read is
-            variable v_rdata_invert: std_logic := '0';
-            variable v_rdata_mask:   std_logic_vector(1 downto 0) := "11";
-        begin
-            v.cmd_valid     := '1';
-            if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
-                -- Start a new read transaction.
-                v.cmd_write     := '0';
-                v.cmd_addr      := std_logic_vector(r.byte_addr(r.byte_addr'high downto 1));
-                -- Add exected result to read FIFO.
-                v_rdata_invert  := '1';  -- expect inverted pattern
-                if r.byte_addr(0) = '1' then
-                    v_rdata_mask    := "01";  -- ignore first byte
-                elsif r.byte_addr = r.burst_end then
-                    v_rdata_mask    := "10";  -- ignore second byte
-                else
-                    v_rdata_mask    := "11";
-                end if;
-                v.rdata_fifolen := v.rdata_fifolen + 1;
-                v.rdata_fifo    := r.rdata_fifo(r.rdata_fifo'high-3 downto 0) & v_rdata_invert & v_rdata_mask;
-                -- Update address.
-                if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
-                    -- End burst; go to the write phase.
-                    v.byte_addr     := r.burst_addr;
-                    v.state         := State_Elem3Write;
-                else
-                    -- Continue burst.
-                    v.byte_addr     := shift_left(shift_right(r.byte_addr, 1) + 1, 1);
-                end if;
-            end if;
-        end procedure;
-
-        -- Execute the write phase of march element 3: down(r1, w0).
-        procedure Handle_Elem3Write is
-        begin
-            v.cmd_valid     := '1';
-            if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
-                -- Start a new write transaction.
-                v.cmd_write     := '1';
-                v.cmd_addr      := std_logic_vector(r.byte_addr(r.byte_addr'high downto 1));
-                v.cmd_wdata     := r.pattern;
-                if r.byte_addr(0) = '1' then
-                    v.cmd_wmask     := "01";  -- burst starts on odd byte address
-                elsif r.byte_addr = r.burst_end then
-                    v.cmd_wmask     := "10";  -- burst ends on odd byte address
-                else
-                    v.cmd_wmask     := "11";
-                end if;
-                if shift_right(r.byte_addr, 1) = shift_right(r.burst_end, 1) then
-                    -- End burst.
-                    if r.burst_addr > 0 then
-                        -- Continue with next burst.
-                        v.burst_addr    := r.burst_addr - r.burstlen;
-                        v.burst_end     := r.burst_addr - 1;
-                        v.byte_addr     := r.burst_addr - r.burstlen;
-                        v.state         := State_Elem3Read;
                     else
                         -- End march.
                         v.state         := State_EndBurstLen;
+                        v.march_active  := '0';
                     end if;
                 else
                     -- Continue burst.
@@ -589,23 +688,37 @@ begin
             v.index         := (others => '0');
             v.cmd_valid     := r.cmd_valid and (not ram_cmd_ready);
             if (r.cmd_valid = '0') and (r.rdata_fifolen = 0) then
-                -- Go to the next burst length or end the current pattern.
-                if r.err_flag = '1' then
-                    v.state     := State_ReportError;
-                else
+                if r.errmem_raddr = r.errmem_waddr then
+                    -- Reached end of error log.
+                    -- Go to the next burst length or end the current pattern.
                     v.burstlen_index := r.burstlen_index + 1;
                     if r.burstlen_index < burst_length_table'high then
                         v.state     := State_NewBurstLen;
                     else
                         v.state     := State_EndPattern;
                     end if;
+                else
+                    -- Dump error log.
+                    v.state     := State_ReportError;
                 end if;
             end if;
         end procedure;
 
         procedure Handle_ReportError is
+            variable v_err_phase:    std_logic_vector(1 downto 0) := "00";
+            variable v_err_addr:     std_logic_vector(address_bits-1 downto 0) := (others => '0');
+            variable v_err_mask:     std_logic_vector(1 downto 0) := "00";
+            variable v_err_expect:   std_logic_vector(15 downto 0) := (others => '0');
+            variable v_err_rdata:    std_logic_vector(15 downto 0) := (others => '0');
         begin
             -- Write "E=n-nnnnnn-n-nnnn-nnnn " to debug output.
+
+            v_err_phase  := r.errmem_rdata(1+address_bits+2+16+16 downto address_bits+2+16+16);
+            v_err_addr   := r.errmem_rdata(address_bits-1+2+16+16 downto 2+16+16);
+            v_err_mask   := r.errmem_rdata(1+16+16 downto 16+16);
+            v_err_expect := r.errmem_rdata(15+16 downto 16);
+            v_err_rdata  := r.errmem_rdata(15 downto 0);
+
             v.msg_valid     := '1';
             if (r.msg_valid = '0') or (msg_ready = '1') then
                 v.index         := r.index + 1;
@@ -616,31 +729,27 @@ begin
                         v.msg_data      := x"45";  -- 'E'
                     when 1 =>
                         v.msg_data      := x"3D";  -- '='
-                        v.hexshift(31 downto 28) := "00" & r.err_phase;
+                        v.hexshift(31 downto 28) := "00" & v_err_phase;
                     when 3 =>
                         v.msg_data      := x"2D";  -- '-'
                         v.hexshift(31 downto 8) := (others => '0');
-                        v.hexshift(address_bits+7 downto 8) := r.err_addr;
+                        v.hexshift(address_bits+7 downto 8) := v_err_addr;
                     when 10 =>
                         v.msg_data      := x"2D";  -- '-'
-                        v.hexshift(31 downto 28) := "00" & r.err_mask;
+                        v.hexshift(31 downto 28) := "00" & v_err_mask;
                     when 12 =>
                         v.msg_data      := x"2D";  -- '-'
-                        v.hexshift(31 downto 16) := r.err_expect;
+                        v.hexshift(31 downto 16) := v_err_expect;
                     when 17 =>
                         v.msg_data      := x"2D";  -- '-'
-                        v.hexshift(31 downto 16) := r.err_rdata;
+                        v.hexshift(31 downto 16) := v_err_rdata;
                     when 22 =>
                         v.msg_data      := x"20";  -- ' '
                     when 23 =>
+                        -- Go to next error log entry.
                         v.msg_valid     := '0';
-                        v.burstlen_index := r.burstlen_index + 1;
-                        v.index         := (others => '0');
-                        if r.burstlen_index < burst_length_table'high then
-                            v.state     := State_NewBurstLen;
-                        else
-                            v.state     := State_EndPattern;
-                        end if;
+                        v.errmem_raddr  := r.errmem_raddr + 1;
+                        v.state         := State_EndBurstLen;
                     when others =>
                         null;
                 end case;
@@ -670,7 +779,7 @@ begin
                         v.msg_valid     := '0';
                         -- Go to the next pattern or end the current round.
                         v.pattern_index := r.pattern_index + 1;
-                        if r.pattern_index < test_data'high then
+                        if r.pattern_index < test_pattern_data'high then
                             v.state         := State_NewPattern;
                         else
                             v.state         := State_EndRound;
@@ -693,9 +802,6 @@ begin
     begin
         if rising_edge(clk) then
 
-            -- By default do not intiate a memory transaction.
-            v.cmd_valid     := '0';
-
             -- By default do not output a debug character.
             v.msg_valid     := '0';
 
@@ -710,13 +816,17 @@ begin
             end if;
 
             -- Select data pattern.
-            v.pattern       := test_data(to_integer(r.pattern_index));
+            v.pattern       := test_pattern_data(to_integer(r.pattern_index));
+            v.random_pattern := test_pattern_random(to_integer(r.pattern_index));
 
             -- Select burst length.
             v.burstlen      := to_unsigned(burst_length_table(to_integer(r.burstlen_index)), 10);
 
             -- Verify read data.
-            Check_ReadResponse;
+            CheckReadResponse;
+
+            -- Push new transactions to the HyperRAM controller.
+            DriveMemTransaction;
 
             -- Main state machine.
             case r.state is
@@ -730,16 +840,20 @@ begin
                     Handle_NewPattern;
                 when State_NewBurstLen =>
                     Handle_NewBurstLen;
-                when State_Elem1Write =>
-                    Handle_Elem1Write;
-                when State_Elem2Read =>
-                    Handle_Elem2Read;
-                when State_Elem2Write =>
-                    Handle_Elem2Write;
-                when State_Elem3Read =>
-                    Handle_Elem3Read;
-                when State_Elem3Write =>
-                    Handle_Elem3Write;
+                when State_StartMarch =>
+                    Handle_StartMarch;
+                when State_MarchUpW0 =>
+                    Handle_MarchUpW0;
+                when State_MarchUpR0 =>
+                    Handle_MarchUpR0;
+                when State_MarchUpW1 =>
+                    Handle_MarchUpW1;
+                when State_MarchDownR1 =>
+                    Handle_MarchDownR1;
+                when State_MarchDownW0 =>
+                    Handle_MarchDownW0;
+                when State_MarchUpR1 =>
+                    Handle_MarchUpR1;
                 when State_EndBurstLen =>
                     Handle_EndBurstLen;
                 when State_ReportError =>
@@ -755,10 +869,17 @@ begin
                 v.state         := State_Init;
                 v.cmd_valid     := '0';
                 v.msg_valid     := '0';
+                v.march_active  := '0';
             end if;
 
             -- Update registers.
             r <= v;
+
+            -- Error memory implementation.
+            v.errmem_rdata := error_mem(to_integer(r.errmem_raddr));
+            if r.errmem_write = '1' then
+                error_mem(to_integer(r.errmem_waddr)) <= r.errmem_wdata;
+            end if;
 
         end if;
     end process;

@@ -20,7 +20,7 @@
 --                  Serial output messages at 115200 bps.
 --
 -- If everything works correctly, the red LED should never turn on,
--- and the green LED should turn on about 90 seconds after startup.
+-- and the green LED should turn on about 70 seconds after startup.
 --
 -- To monitor the test process, connect an FTDI-USB cable to
 -- the FTDI header and monitor the serial port at 115200 bps.
@@ -28,7 +28,8 @@
 -- Each round of the test prints a line:
 --   R=(round_nr_hex) F=(total_failures_hex)
 --
--- Each round consists of 8 test patterns, tested at several burst lengths.
+-- Each round consists of 7 test patterns: 5 fixed words, 2 random sequences.
+-- Each test pattern is tested at several burst lengths.
 -- Each test pattern prints a line:
 --   P=(test_pattern) B=(burstlen) B=(burstlen) ... F=(total_failures_hex)
 --
