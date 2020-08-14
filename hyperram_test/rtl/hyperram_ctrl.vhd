@@ -50,7 +50,7 @@ entity hyperram_ctrl is
 
         -- Initial latency (t_ACC) as a number of clock cycles.
         -- Must match the setting in configuration register 0.
-        t_access_clk:   integer range 3 to 6 := 4;
+        t_access_clk:   integer range 4 to 6 := 4;
 
         -- Read-write-recovery time (t_RWR) as a number of clock cycles.
         t_rwr_clk:      integer range 4 to 7 := 4;
@@ -150,6 +150,7 @@ architecture arch_hyperram_ctrl of hyperram_ctrl is
         State_Cmd2,
         State_Cmd3,
         State_Config,
+        State_WaitRWDS,
         State_PollRWDS,
         State_AccessWait,
         State_Write,
@@ -428,7 +429,7 @@ begin
                         -- HyperRAM initialization after reset.
                         v.state         := State_Config;
                     else
-                        v.state         := State_PollRWDS;
+                        v.state         := State_WaitRWDS;
                     end if;
 
                 when State_Config =>
@@ -445,30 +446,34 @@ begin
                     -- End config burst after this word.
                     v.state         := State_EndWrite;
 
+                when State_WaitRWDS =>
+                    -- Wait before polling the state of RWDS.
+                    -- Note: r.ram_dq_out holds command word 3 in this state.
+                    v.state         := State_PollRWDS;
+
                 when State_PollRWDS =>
                     -- Check the state of RWDS during the command word to
                     -- decide whether the HyperRAM needs 1x or 2x latency.
-                    -- Note: r.ram_dq_out holds command word 3 in this state.
                     v.state         := State_AccessWait;
-
-                    -- Setup counter to wait for access latency.
-                    if s_ram_rwds_in(0) = '1' then
-                        -- High RWDS indicates 2x access latency.
-                        v.counter       := to_unsigned(2 * t_access_clk - 3,
-                                                       r.counter'length);
-                    else
-                        -- Low RWDS indicates 1x access latency.
-                        v.counter       := to_unsigned(t_access_clk - 3,
-                                                       r.counter'length);
-                    end if;
-
-                when State_AccessWait =>
-                    -- Wait until end of access latency.
 
                     if r.req_write = '0' then
                         -- Stop driving DQ in case of a read transaction.
                         v.ram_dq_t      := '1';
                     end if;
+
+                   -- Setup counter to wait for access latency.
+                    if s_ram_rwds_in(0) = '1' then
+                        -- High RWDS indicates 2x access latency.
+                        v.counter       := to_unsigned(2 * t_access_clk - 4,
+                                                       r.counter'length);
+                    else
+                        -- Low RWDS indicates 1x access latency.
+                        v.counter       := to_unsigned(t_access_clk - 4,
+                                                       r.counter'length);
+                    end if;
+
+                when State_AccessWait =>
+                    -- Wait until end of access latency.
 
                     if r.counter = 0 then
                         if r.req_write = '1' then
