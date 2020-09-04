@@ -133,8 +133,8 @@ set_property PULLUP     TRUE     [get_ports {spi_*]}]
 set_property PULLUP     TRUE     [get_ports {hr_cs_l}]
 set_property PULLDOWN   TRUE     [get_ports {hr_rst_l}]
 
-set_property DRIVE      16       [get_ports led1 ]
-set_property DRIVE      16       [get_ports led2 ]
+set_property DRIVE      12       [get_ports led1 ]
+set_property DRIVE      12       [get_ports led2 ]
 set_property SLEW       SLOW     [get_ports led1 ]
 set_property SLEW       SLOW     [get_ports led2 ]
 
