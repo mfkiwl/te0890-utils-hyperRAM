@@ -359,7 +359,9 @@ begin
         -- Push transactions to the HyperRAM controller.
         procedure DriveMemTransaction is
         begin
-            v.cmd_valid     := r.march_active;
+            if (r.cmd_valid = '0') or (ram_cmd_ready = '1') then
+                v.cmd_valid     := r.march_active;
+            end if;
             if (r.march_active = '1') and ((r.cmd_valid = '0') or (ram_cmd_ready = '1')) then
 
                 -- Start a new transaction.
