@@ -288,8 +288,11 @@ begin
     --
 
     process (clk) is
-        variable v: regs_type := r;
+        variable v: regs_type;
     begin
+        -- Initialize next registers from current registers.
+        v := r;
+
         if rising_edge(clk) then
 
             -- By default clear DQ and RWDS output signals.

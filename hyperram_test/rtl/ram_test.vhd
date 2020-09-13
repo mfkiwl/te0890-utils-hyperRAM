@@ -277,7 +277,7 @@ begin
     --
     process (clk) is
         -- New register values.
-        variable v: regs_type := r;
+        variable v: regs_type;
 
         -- Check read response against expected pattern.
         procedure CheckReadResponse is
@@ -800,6 +800,9 @@ begin
         end procedure;
 
     begin
+        -- Initialize next registers from current registers.
+        v := r;
+
         if rising_edge(clk) then
 
             -- By default do not output a debug character.
@@ -872,14 +875,14 @@ begin
                 v.march_active  := '0';
             end if;
 
-            -- Update registers.
-            r <= v;
-
             -- Error memory implementation.
             v.errmem_rdata := error_mem(to_integer(r.errmem_raddr));
             if r.errmem_write = '1' then
                 error_mem(to_integer(r.errmem_waddr)) <= r.errmem_wdata;
             end if;
+
+            -- Update registers.
+            r <= v;
 
         end if;
     end process;
