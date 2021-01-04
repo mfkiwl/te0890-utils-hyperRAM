@@ -2,7 +2,10 @@
  * Scala code to generate a Risc-V CPU with VexRiscv.
  *
  * ISA:        RV32I
- * Features:   static branch prediction, full barrel shifter, bypassed pipeline
+ * Features:   static branch prediction,
+ *             full barrel shifter,
+ *             bypassed pipeline,
+ *             rdcycle instruction.
  * Timing:     125 MHz on Spartan-7
  *
  * To generate VHDL code:
@@ -34,7 +37,11 @@ object GenMyCpu extends App {
           catchAddressMisaligned = true,
           catchAccessFault = false
         ),
-        new CsrPlugin(CsrPluginConfig.smallest(mtvecInit = 0x80000020l)),
+        new CsrPlugin(
+          config = CsrPluginConfig.small(mtvecInit = 0x80000020l).copy(
+            ucycleAccess = CsrAccess.READ_ONLY
+          )
+        ),
         new DecoderSimplePlugin(
           catchIllegalInstruction = false
         ),

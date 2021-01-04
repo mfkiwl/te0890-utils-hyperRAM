@@ -1,5 +1,5 @@
 -- Generator : SpinalHDL v1.4.0    git head : ecb5a80b713566f417ea3ea061f9969e73770a7f
--- Date      : 03/10/2020, 16:48:36
+-- Date      : 04/01/2021, 22:02:38
 -- Component : VexRiscv
 
 library IEEE;
@@ -7,20 +7,13 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.all;
 
 package pkg_enum is
-  type BranchCtrlEnum is (INC,B,JAL,JALR);
   type ShiftCtrlEnum is (DISABLE_1,SLL_1,SRL_1,SRA_1);
   type AluBitwiseCtrlEnum is (XOR_1,OR_1,AND_1);
-  type EnvCtrlEnum is (NONE,XRET);
+  type BranchCtrlEnum is (INC,B,JAL,JALR);
   type Src2CtrlEnum is (RS,IMI,IMS,PC);
   type AluCtrlEnum is (ADD_SUB,SLT_SLTU,BITWISE);
   type Src1CtrlEnum is (RS,IMU,PC_INCREMENT,URS1);
-
-  function pkg_mux (sel : std_logic;one : BranchCtrlEnum;zero : BranchCtrlEnum) return BranchCtrlEnum;
-  subtype BranchCtrlEnum_defaultEncoding_type is std_logic_vector(1 downto 0);
-  constant BranchCtrlEnum_defaultEncoding_INC : BranchCtrlEnum_defaultEncoding_type := "00";
-  constant BranchCtrlEnum_defaultEncoding_B : BranchCtrlEnum_defaultEncoding_type := "01";
-  constant BranchCtrlEnum_defaultEncoding_JAL : BranchCtrlEnum_defaultEncoding_type := "10";
-  constant BranchCtrlEnum_defaultEncoding_JALR : BranchCtrlEnum_defaultEncoding_type := "11";
+  type EnvCtrlEnum is (NONE,XRET);
 
   function pkg_mux (sel : std_logic;one : ShiftCtrlEnum;zero : ShiftCtrlEnum) return ShiftCtrlEnum;
   subtype ShiftCtrlEnum_defaultEncoding_type is std_logic_vector(1 downto 0);
@@ -35,10 +28,12 @@ package pkg_enum is
   constant AluBitwiseCtrlEnum_defaultEncoding_OR_1 : AluBitwiseCtrlEnum_defaultEncoding_type := "01";
   constant AluBitwiseCtrlEnum_defaultEncoding_AND_1 : AluBitwiseCtrlEnum_defaultEncoding_type := "10";
 
-  function pkg_mux (sel : std_logic;one : EnvCtrlEnum;zero : EnvCtrlEnum) return EnvCtrlEnum;
-  subtype EnvCtrlEnum_defaultEncoding_type is std_logic_vector(0 downto 0);
-  constant EnvCtrlEnum_defaultEncoding_NONE : EnvCtrlEnum_defaultEncoding_type := "0";
-  constant EnvCtrlEnum_defaultEncoding_XRET : EnvCtrlEnum_defaultEncoding_type := "1";
+  function pkg_mux (sel : std_logic;one : BranchCtrlEnum;zero : BranchCtrlEnum) return BranchCtrlEnum;
+  subtype BranchCtrlEnum_defaultEncoding_type is std_logic_vector(1 downto 0);
+  constant BranchCtrlEnum_defaultEncoding_INC : BranchCtrlEnum_defaultEncoding_type := "00";
+  constant BranchCtrlEnum_defaultEncoding_B : BranchCtrlEnum_defaultEncoding_type := "01";
+  constant BranchCtrlEnum_defaultEncoding_JAL : BranchCtrlEnum_defaultEncoding_type := "10";
+  constant BranchCtrlEnum_defaultEncoding_JALR : BranchCtrlEnum_defaultEncoding_type := "11";
 
   function pkg_mux (sel : std_logic;one : Src2CtrlEnum;zero : Src2CtrlEnum) return Src2CtrlEnum;
   subtype Src2CtrlEnum_defaultEncoding_type is std_logic_vector(1 downto 0);
@@ -60,18 +55,14 @@ package pkg_enum is
   constant Src1CtrlEnum_defaultEncoding_PC_INCREMENT : Src1CtrlEnum_defaultEncoding_type := "10";
   constant Src1CtrlEnum_defaultEncoding_URS1 : Src1CtrlEnum_defaultEncoding_type := "11";
 
+  function pkg_mux (sel : std_logic;one : EnvCtrlEnum;zero : EnvCtrlEnum) return EnvCtrlEnum;
+  subtype EnvCtrlEnum_defaultEncoding_type is std_logic_vector(0 downto 0);
+  constant EnvCtrlEnum_defaultEncoding_NONE : EnvCtrlEnum_defaultEncoding_type := "0";
+  constant EnvCtrlEnum_defaultEncoding_XRET : EnvCtrlEnum_defaultEncoding_type := "1";
+
 end pkg_enum;
 
 package body pkg_enum is
-  function pkg_mux (sel : std_logic;one : BranchCtrlEnum;zero : BranchCtrlEnum) return BranchCtrlEnum is
-  begin
-    if sel = '1' then
-      return one;
-    else
-      return zero;
-    end if;
-  end pkg_mux;
-
   function pkg_mux (sel : std_logic;one : ShiftCtrlEnum;zero : ShiftCtrlEnum) return ShiftCtrlEnum is
   begin
     if sel = '1' then
@@ -90,7 +81,7 @@ package body pkg_enum is
     end if;
   end pkg_mux;
 
-  function pkg_mux (sel : std_logic;one : EnvCtrlEnum;zero : EnvCtrlEnum) return EnvCtrlEnum is
+  function pkg_mux (sel : std_logic;one : BranchCtrlEnum;zero : BranchCtrlEnum) return BranchCtrlEnum is
   begin
     if sel = '1' then
       return one;
@@ -118,6 +109,15 @@ package body pkg_enum is
   end pkg_mux;
 
   function pkg_mux (sel : std_logic;one : Src1CtrlEnum;zero : Src1CtrlEnum) return Src1CtrlEnum is
+  begin
+    if sel = '1' then
+      return one;
+    else
+      return zero;
+    end if;
+  end pkg_mux;
+
+  function pkg_mux (sel : std_logic;one : EnvCtrlEnum;zero : EnvCtrlEnum) return EnvCtrlEnum is
   begin
     if sel = '1' then
       return one;
@@ -704,239 +704,232 @@ entity VexRiscv is
 end VexRiscv;
 
 architecture arch of VexRiscv is
-  signal zz_148 : std_logic;
-  signal zz_149 : std_logic;
-  signal zz_150 : std_logic_vector(31 downto 0);
-  signal zz_151 : std_logic_vector(31 downto 0);
-  signal zz_152 : unsigned(31 downto 0);
-  signal zz_153 : unsigned(1 downto 0);
-  signal zz_154 : std_logic;
-  signal zz_155 : unsigned(31 downto 0);
+  signal zz_152 : std_logic;
+  signal zz_153 : std_logic;
+  signal zz_154 : std_logic_vector(31 downto 0);
+  signal zz_155 : std_logic_vector(31 downto 0);
+  signal zz_156 : unsigned(31 downto 0);
+  signal zz_157 : unsigned(1 downto 0);
+  signal zz_158 : std_logic;
+  signal zz_159 : unsigned(31 downto 0);
   signal IBusSimplePlugin_rspJoin_rspBuffer_c_io_push_ready : std_logic;
   signal IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_valid : std_logic;
   signal IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_payload_error : std_logic;
   signal IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_payload_inst : std_logic_vector(31 downto 0);
   signal IBusSimplePlugin_rspJoin_rspBuffer_c_io_occupancy : unsigned(0 downto 0);
-  signal zz_156 : std_logic;
-  signal zz_157 : std_logic;
-  signal zz_158 : std_logic;
-  signal zz_159 : std_logic;
   signal zz_160 : std_logic;
   signal zz_161 : std_logic;
   signal zz_162 : std_logic;
   signal zz_163 : std_logic;
   signal zz_164 : std_logic;
   signal zz_165 : std_logic;
-  signal zz_166 : std_logic_vector(1 downto 0);
+  signal zz_166 : std_logic;
   signal zz_167 : std_logic;
   signal zz_168 : std_logic;
   signal zz_169 : std_logic;
-  signal zz_170 : std_logic;
+  signal zz_170 : std_logic_vector(1 downto 0);
   signal zz_171 : std_logic;
   signal zz_172 : std_logic;
-  signal zz_173 : unsigned(5 downto 0);
+  signal zz_173 : std_logic;
   signal zz_174 : std_logic;
   signal zz_175 : std_logic;
   signal zz_176 : std_logic;
-  signal zz_177 : std_logic;
-  signal zz_178 : std_logic_vector(1 downto 0);
+  signal zz_177 : unsigned(5 downto 0);
+  signal zz_178 : std_logic;
   signal zz_179 : std_logic;
   signal zz_180 : std_logic;
   signal zz_181 : std_logic;
-  signal zz_182 : unsigned(1 downto 0);
-  signal zz_183 : std_logic_vector(0 downto 0);
-  signal zz_184 : std_logic_vector(7 downto 0);
+  signal zz_182 : std_logic_vector(1 downto 0);
+  signal zz_183 : std_logic;
+  signal zz_184 : std_logic;
   signal zz_185 : std_logic;
-  signal zz_186 : std_logic_vector(0 downto 0);
+  signal zz_186 : unsigned(1 downto 0);
   signal zz_187 : std_logic_vector(0 downto 0);
-  signal zz_188 : std_logic;
+  signal zz_188 : std_logic_vector(7 downto 0);
   signal zz_189 : std_logic;
-  signal zz_190 : std_logic_vector(31 downto 0);
-  signal zz_191 : std_logic_vector(31 downto 0);
-  signal zz_192 : std_logic_vector(0 downto 0);
-  signal zz_193 : std_logic_vector(1 downto 0);
-  signal zz_194 : std_logic_vector(0 downto 0);
-  signal zz_195 : std_logic_vector(0 downto 0);
-  signal zz_196 : std_logic;
+  signal zz_190 : std_logic_vector(0 downto 0);
+  signal zz_191 : std_logic_vector(0 downto 0);
+  signal zz_192 : std_logic_vector(31 downto 0);
+  signal zz_193 : std_logic_vector(31 downto 0);
+  signal zz_194 : std_logic_vector(31 downto 0);
+  signal zz_195 : std_logic_vector(31 downto 0);
+  signal zz_196 : std_logic_vector(0 downto 0);
   signal zz_197 : std_logic_vector(0 downto 0);
-  signal zz_198 : std_logic_vector(19 downto 0);
-  signal zz_199 : std_logic_vector(31 downto 0);
-  signal zz_200 : std_logic_vector(31 downto 0);
-  signal zz_201 : std_logic_vector(31 downto 0);
-  signal zz_202 : std_logic_vector(31 downto 0);
+  signal zz_198 : std_logic_vector(2 downto 0);
+  signal zz_199 : std_logic_vector(2 downto 0);
+  signal zz_200 : std_logic;
+  signal zz_201 : std_logic_vector(0 downto 0);
+  signal zz_202 : std_logic_vector(19 downto 0);
   signal zz_203 : std_logic_vector(31 downto 0);
   signal zz_204 : std_logic_vector(31 downto 0);
   signal zz_205 : std_logic_vector(31 downto 0);
   signal zz_206 : std_logic_vector(31 downto 0);
-  signal zz_207 : std_logic_vector(0 downto 0);
-  signal zz_208 : std_logic_vector(0 downto 0);
-  signal zz_209 : std_logic_vector(1 downto 0);
-  signal zz_210 : std_logic_vector(1 downto 0);
-  signal zz_211 : std_logic;
+  signal zz_207 : std_logic;
+  signal zz_208 : std_logic;
+  signal zz_209 : std_logic_vector(31 downto 0);
+  signal zz_210 : std_logic_vector(31 downto 0);
+  signal zz_211 : std_logic_vector(0 downto 0);
   signal zz_212 : std_logic_vector(0 downto 0);
-  signal zz_213 : std_logic_vector(16 downto 0);
-  signal zz_214 : std_logic_vector(31 downto 0);
-  signal zz_215 : std_logic_vector(31 downto 0);
-  signal zz_216 : std_logic_vector(31 downto 0);
-  signal zz_217 : std_logic_vector(31 downto 0);
+  signal zz_213 : std_logic_vector(0 downto 0);
+  signal zz_214 : std_logic_vector(0 downto 0);
+  signal zz_215 : std_logic;
+  signal zz_216 : std_logic_vector(0 downto 0);
+  signal zz_217 : std_logic_vector(16 downto 0);
   signal zz_218 : std_logic_vector(31 downto 0);
   signal zz_219 : std_logic_vector(31 downto 0);
-  signal zz_220 : std_logic;
-  signal zz_221 : std_logic_vector(0 downto 0);
+  signal zz_220 : std_logic_vector(31 downto 0);
+  signal zz_221 : std_logic;
   signal zz_222 : std_logic_vector(0 downto 0);
-  signal zz_223 : std_logic;
+  signal zz_223 : std_logic_vector(1 downto 0);
   signal zz_224 : std_logic_vector(0 downto 0);
-  signal zz_225 : std_logic_vector(13 downto 0);
-  signal zz_226 : std_logic_vector(31 downto 0);
-  signal zz_227 : std_logic_vector(31 downto 0);
-  signal zz_228 : std_logic_vector(31 downto 0);
-  signal zz_229 : std_logic_vector(31 downto 0);
-  signal zz_230 : std_logic;
-  signal zz_231 : std_logic;
-  signal zz_232 : std_logic_vector(0 downto 0);
-  signal zz_233 : std_logic_vector(0 downto 0);
-  signal zz_234 : std_logic_vector(1 downto 0);
-  signal zz_235 : std_logic_vector(1 downto 0);
-  signal zz_236 : std_logic;
-  signal zz_237 : std_logic_vector(0 downto 0);
-  signal zz_238 : std_logic_vector(9 downto 0);
-  signal zz_239 : std_logic_vector(31 downto 0);
-  signal zz_240 : std_logic_vector(31 downto 0);
-  signal zz_241 : std_logic_vector(31 downto 0);
+  signal zz_225 : std_logic_vector(1 downto 0);
+  signal zz_226 : std_logic_vector(5 downto 0);
+  signal zz_227 : std_logic_vector(5 downto 0);
+  signal zz_228 : std_logic;
+  signal zz_229 : std_logic_vector(0 downto 0);
+  signal zz_230 : std_logic_vector(13 downto 0);
+  signal zz_231 : std_logic_vector(31 downto 0);
+  signal zz_232 : std_logic_vector(31 downto 0);
+  signal zz_233 : std_logic_vector(31 downto 0);
+  signal zz_234 : std_logic;
+  signal zz_235 : std_logic;
+  signal zz_236 : std_logic_vector(31 downto 0);
+  signal zz_237 : std_logic_vector(31 downto 0);
+  signal zz_238 : std_logic;
+  signal zz_239 : std_logic;
+  signal zz_240 : std_logic_vector(0 downto 0);
+  signal zz_241 : std_logic_vector(3 downto 0);
   signal zz_242 : std_logic;
   signal zz_243 : std_logic_vector(0 downto 0);
-  signal zz_244 : std_logic_vector(1 downto 0);
-  signal zz_245 : std_logic_vector(0 downto 0);
+  signal zz_244 : std_logic_vector(0 downto 0);
+  signal zz_245 : std_logic;
   signal zz_246 : std_logic_vector(0 downto 0);
-  signal zz_247 : std_logic_vector(2 downto 0);
-  signal zz_248 : std_logic_vector(2 downto 0);
-  signal zz_249 : std_logic;
-  signal zz_250 : std_logic_vector(0 downto 0);
-  signal zz_251 : std_logic_vector(6 downto 0);
+  signal zz_247 : std_logic_vector(11 downto 0);
+  signal zz_248 : std_logic_vector(31 downto 0);
+  signal zz_249 : std_logic_vector(31 downto 0);
+  signal zz_250 : std_logic_vector(31 downto 0);
+  signal zz_251 : std_logic_vector(31 downto 0);
   signal zz_252 : std_logic_vector(31 downto 0);
   signal zz_253 : std_logic_vector(31 downto 0);
-  signal zz_254 : std_logic_vector(31 downto 0);
-  signal zz_255 : std_logic;
-  signal zz_256 : std_logic;
+  signal zz_254 : std_logic;
+  signal zz_255 : std_logic_vector(0 downto 0);
+  signal zz_256 : std_logic_vector(1 downto 0);
   signal zz_257 : std_logic_vector(31 downto 0);
   signal zz_258 : std_logic_vector(31 downto 0);
   signal zz_259 : std_logic_vector(31 downto 0);
-  signal zz_260 : std_logic_vector(31 downto 0);
-  signal zz_261 : std_logic;
+  signal zz_260 : std_logic;
+  signal zz_261 : std_logic_vector(0 downto 0);
   signal zz_262 : std_logic_vector(0 downto 0);
-  signal zz_263 : std_logic_vector(0 downto 0);
-  signal zz_264 : std_logic;
-  signal zz_265 : std_logic_vector(0 downto 0);
-  signal zz_266 : std_logic_vector(0 downto 0);
-  signal zz_267 : std_logic;
-  signal zz_268 : std_logic_vector(0 downto 0);
-  signal zz_269 : std_logic_vector(4 downto 0);
+  signal zz_263 : std_logic;
+  signal zz_264 : std_logic_vector(0 downto 0);
+  signal zz_265 : std_logic_vector(9 downto 0);
+  signal zz_266 : std_logic_vector(31 downto 0);
+  signal zz_267 : std_logic_vector(31 downto 0);
+  signal zz_268 : std_logic_vector(31 downto 0);
+  signal zz_269 : std_logic_vector(31 downto 0);
   signal zz_270 : std_logic_vector(31 downto 0);
   signal zz_271 : std_logic_vector(31 downto 0);
   signal zz_272 : std_logic_vector(31 downto 0);
   signal zz_273 : std_logic_vector(31 downto 0);
-  signal zz_274 : std_logic_vector(31 downto 0);
-  signal zz_275 : std_logic_vector(31 downto 0);
-  signal zz_276 : std_logic_vector(31 downto 0);
-  signal zz_277 : std_logic_vector(31 downto 0);
-  signal zz_278 : std_logic_vector(31 downto 0);
-  signal zz_279 : std_logic_vector(31 downto 0);
-  signal zz_280 : std_logic_vector(0 downto 0);
-  signal zz_281 : std_logic_vector(4 downto 0);
-  signal zz_282 : std_logic_vector(0 downto 0);
-  signal zz_283 : std_logic_vector(0 downto 0);
+  signal zz_274 : std_logic_vector(0 downto 0);
+  signal zz_275 : std_logic_vector(0 downto 0);
+  signal zz_276 : std_logic_vector(1 downto 0);
+  signal zz_277 : std_logic_vector(1 downto 0);
+  signal zz_278 : std_logic;
+  signal zz_279 : std_logic_vector(0 downto 0);
+  signal zz_280 : std_logic_vector(6 downto 0);
+  signal zz_281 : std_logic_vector(31 downto 0);
+  signal zz_282 : std_logic_vector(31 downto 0);
+  signal zz_283 : std_logic_vector(31 downto 0);
   signal zz_284 : std_logic;
-  signal zz_285 : std_logic_vector(0 downto 0);
-  signal zz_286 : std_logic_vector(2 downto 0);
-  signal zz_287 : std_logic_vector(31 downto 0);
-  signal zz_288 : std_logic_vector(31 downto 0);
+  signal zz_285 : std_logic;
+  signal zz_286 : std_logic;
+  signal zz_287 : std_logic_vector(0 downto 0);
+  signal zz_288 : std_logic_vector(0 downto 0);
   signal zz_289 : std_logic;
   signal zz_290 : std_logic_vector(0 downto 0);
-  signal zz_291 : std_logic_vector(1 downto 0);
+  signal zz_291 : std_logic_vector(3 downto 0);
   signal zz_292 : std_logic_vector(31 downto 0);
   signal zz_293 : std_logic;
-  signal zz_294 : std_logic_vector(0 downto 0);
-  signal zz_295 : std_logic_vector(0 downto 0);
-  signal zz_296 : std_logic_vector(0 downto 0);
-  signal zz_297 : std_logic_vector(0 downto 0);
+  signal zz_294 : std_logic;
+  signal zz_295 : std_logic;
+  signal zz_296 : std_logic_vector(1 downto 0);
+  signal zz_297 : std_logic_vector(1 downto 0);
   signal zz_298 : std_logic;
-  signal zz_299 : std_logic;
-  signal zz_300 : std_logic_vector(31 downto 0);
+  signal zz_299 : std_logic_vector(0 downto 0);
+  signal zz_300 : std_logic_vector(0 downto 0);
   signal zz_301 : std_logic_vector(31 downto 0);
   signal zz_302 : std_logic_vector(31 downto 0);
   signal zz_303 : std_logic_vector(31 downto 0);
   signal zz_304 : std_logic_vector(31 downto 0);
   signal zz_305 : std_logic_vector(31 downto 0);
-  signal zz_306 : std_logic_vector(31 downto 0);
-  signal zz_307 : std_logic_vector(31 downto 0);
-  signal zz_308 : std_logic_vector(31 downto 0);
-  signal zz_309 : std_logic_vector(31 downto 0);
-  signal zz_310 : std_logic_vector(31 downto 0);
+  signal zz_306 : std_logic_vector(0 downto 0);
+  signal zz_307 : std_logic_vector(0 downto 0);
+  signal zz_308 : std_logic_vector(0 downto 0);
+  signal zz_309 : std_logic_vector(7 downto 0);
+  signal zz_310 : std_logic;
   signal zz_311 : std_logic_vector(0 downto 0);
-  signal zz_312 : std_logic_vector(7 downto 0);
-  signal zz_313 : std_logic;
-  signal zz_314 : std_logic_vector(0 downto 0);
-  signal zz_315 : std_logic_vector(0 downto 0);
+  signal zz_312 : std_logic_vector(0 downto 0);
   attribute keep : boolean;
   attribute syn_keep : boolean;
 
-  signal zz_1 : BranchCtrlEnum_defaultEncoding_type;
-  signal zz_2 : BranchCtrlEnum_defaultEncoding_type;
-  signal decode_MEMORY_STORE : std_logic;
-  signal memory_MEMORY_ADDRESS_LOW : unsigned(1 downto 0);
-  signal execute_MEMORY_ADDRESS_LOW : unsigned(1 downto 0);
-  signal decode_PREDICTION_HAD_BRANCHED2 : std_logic;
-  signal decode_DO_EBREAK : std_logic;
-  signal decode_IS_CSR : std_logic;
+  signal decode_CSR_READ_OPCODE : std_logic;
+  signal memory_PC : unsigned(31 downto 0);
+  signal zz_1 : ShiftCtrlEnum_defaultEncoding_type;
+  signal zz_2 : ShiftCtrlEnum_defaultEncoding_type;
+  signal decode_SHIFT_CTRL : ShiftCtrlEnum_defaultEncoding_type;
   signal zz_3 : ShiftCtrlEnum_defaultEncoding_type;
   signal zz_4 : ShiftCtrlEnum_defaultEncoding_type;
-  signal decode_SHIFT_CTRL : ShiftCtrlEnum_defaultEncoding_type;
   signal zz_5 : ShiftCtrlEnum_defaultEncoding_type;
-  signal zz_6 : ShiftCtrlEnum_defaultEncoding_type;
-  signal zz_7 : ShiftCtrlEnum_defaultEncoding_type;
-  signal execute_SHIFT_RIGHT : std_logic_vector(31 downto 0);
+  signal decode_CSR_WRITE_OPCODE : std_logic;
+  signal execute_BYPASSABLE_MEMORY_STAGE : std_logic;
+  signal decode_BYPASSABLE_MEMORY_STAGE : std_logic;
   signal decode_ALU_BITWISE_CTRL : AluBitwiseCtrlEnum_defaultEncoding_type;
+  signal zz_6 : AluBitwiseCtrlEnum_defaultEncoding_type;
+  signal zz_7 : AluBitwiseCtrlEnum_defaultEncoding_type;
   signal zz_8 : AluBitwiseCtrlEnum_defaultEncoding_type;
-  signal zz_9 : AluBitwiseCtrlEnum_defaultEncoding_type;
-  signal zz_10 : AluBitwiseCtrlEnum_defaultEncoding_type;
+  signal zz_9 : BranchCtrlEnum_defaultEncoding_type;
+  signal zz_10 : BranchCtrlEnum_defaultEncoding_type;
+  signal decode_DO_EBREAK : std_logic;
+  signal execute_BRANCH_CALC : unsigned(31 downto 0);
+  signal decode_SRC2_CTRL : Src2CtrlEnum_defaultEncoding_type;
+  signal zz_11 : Src2CtrlEnum_defaultEncoding_type;
+  signal zz_12 : Src2CtrlEnum_defaultEncoding_type;
+  signal zz_13 : Src2CtrlEnum_defaultEncoding_type;
   signal decode_BYPASSABLE_EXECUTE_STAGE : std_logic;
-  signal zz_11 : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_12 : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_13 : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_14 : EnvCtrlEnum_defaultEncoding_type;
-  signal decode_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_15 : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_16 : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_17 : EnvCtrlEnum_defaultEncoding_type;
-  signal memory_PC : unsigned(31 downto 0);
+  signal execute_BRANCH_DO : std_logic;
+  signal decode_SRC2_FORCE_ZERO : std_logic;
+  signal decode_ALU_CTRL : AluCtrlEnum_defaultEncoding_type;
+  signal zz_14 : AluCtrlEnum_defaultEncoding_type;
+  signal zz_15 : AluCtrlEnum_defaultEncoding_type;
+  signal zz_16 : AluCtrlEnum_defaultEncoding_type;
+  signal decode_MEMORY_ENABLE : std_logic;
+  signal decode_PREDICTION_HAD_BRANCHED2 : std_logic;
+  signal decode_SRC1_CTRL : Src1CtrlEnum_defaultEncoding_type;
+  signal zz_17 : Src1CtrlEnum_defaultEncoding_type;
+  signal zz_18 : Src1CtrlEnum_defaultEncoding_type;
+  signal zz_19 : Src1CtrlEnum_defaultEncoding_type;
   signal writeBack_FORMAL_PC_NEXT : unsigned(31 downto 0);
   signal memory_FORMAL_PC_NEXT : unsigned(31 downto 0);
   signal execute_FORMAL_PC_NEXT : unsigned(31 downto 0);
   signal decode_FORMAL_PC_NEXT : unsigned(31 downto 0);
-  signal execute_BRANCH_CALC : unsigned(31 downto 0);
-  signal execute_BYPASSABLE_MEMORY_STAGE : std_logic;
-  signal decode_BYPASSABLE_MEMORY_STAGE : std_logic;
-  signal decode_SRC2_CTRL : Src2CtrlEnum_defaultEncoding_type;
-  signal zz_18 : Src2CtrlEnum_defaultEncoding_type;
-  signal zz_19 : Src2CtrlEnum_defaultEncoding_type;
-  signal zz_20 : Src2CtrlEnum_defaultEncoding_type;
-  signal decode_CSR_WRITE_OPCODE : std_logic;
-  signal decode_MEMORY_ENABLE : std_logic;
-  signal execute_BRANCH_DO : std_logic;
+  signal zz_20 : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_21 : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_22 : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_23 : EnvCtrlEnum_defaultEncoding_type;
+  signal decode_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_24 : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_25 : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_26 : EnvCtrlEnum_defaultEncoding_type;
   signal memory_MEMORY_READ_DATA : std_logic_vector(31 downto 0);
   signal writeBack_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
   signal execute_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
-  signal decode_ALU_CTRL : AluCtrlEnum_defaultEncoding_type;
-  signal zz_21 : AluCtrlEnum_defaultEncoding_type;
-  signal zz_22 : AluCtrlEnum_defaultEncoding_type;
-  signal zz_23 : AluCtrlEnum_defaultEncoding_type;
-  signal decode_SRC1_CTRL : Src1CtrlEnum_defaultEncoding_type;
-  signal zz_24 : Src1CtrlEnum_defaultEncoding_type;
-  signal zz_25 : Src1CtrlEnum_defaultEncoding_type;
-  signal zz_26 : Src1CtrlEnum_defaultEncoding_type;
-  signal decode_CSR_READ_OPCODE : std_logic;
   signal decode_SRC_LESS_UNSIGNED : std_logic;
-  signal decode_SRC2_FORCE_ZERO : std_logic;
+  signal decode_MEMORY_STORE : std_logic;
+  signal decode_IS_CSR : std_logic;
+  signal execute_SHIFT_RIGHT : std_logic_vector(31 downto 0);
+  signal memory_MEMORY_ADDRESS_LOW : unsigned(1 downto 0);
+  signal execute_MEMORY_ADDRESS_LOW : unsigned(1 downto 0);
   signal execute_DO_EBREAK : std_logic;
   signal decode_IS_EBREAK : std_logic;
   signal memory_BRANCH_CALC : unsigned(31 downto 0);
@@ -985,13 +978,13 @@ architecture arch of VexRiscv is
   signal zz_38 : std_logic;
   signal decode_INSTRUCTION_ANTICIPATED : std_logic_vector(31 downto 0);
   signal decode_REGFILE_WRITE_VALID : std_logic;
-  signal zz_39 : AluBitwiseCtrlEnum_defaultEncoding_type;
-  signal zz_40 : BranchCtrlEnum_defaultEncoding_type;
-  signal zz_41 : ShiftCtrlEnum_defaultEncoding_type;
-  signal zz_42 : Src2CtrlEnum_defaultEncoding_type;
-  signal zz_43 : AluCtrlEnum_defaultEncoding_type;
-  signal zz_44 : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_45 : Src1CtrlEnum_defaultEncoding_type;
+  signal zz_39 : BranchCtrlEnum_defaultEncoding_type;
+  signal zz_40 : ShiftCtrlEnum_defaultEncoding_type;
+  signal zz_41 : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_42 : AluCtrlEnum_defaultEncoding_type;
+  signal zz_43 : Src1CtrlEnum_defaultEncoding_type;
+  signal zz_44 : AluBitwiseCtrlEnum_defaultEncoding_type;
+  signal zz_45 : Src2CtrlEnum_defaultEncoding_type;
   signal zz_46 : std_logic_vector(31 downto 0);
   signal execute_SRC1 : std_logic_vector(31 downto 0);
   signal execute_CSR_READ_OPCODE : std_logic;
@@ -1078,8 +1071,8 @@ architecture arch of VexRiscv is
   signal IBusSimplePlugin_incomingInstruction : std_logic;
   signal IBusSimplePlugin_predictionJumpInterface_valid : std_logic;
   signal IBusSimplePlugin_predictionJumpInterface_payload : unsigned(31 downto 0);
-  attribute keep of IBusSimplePlugin_predictionJumpInterface_payload : signal is true;
   attribute syn_keep of IBusSimplePlugin_predictionJumpInterface_payload : signal is true;
+  attribute keep of IBusSimplePlugin_predictionJumpInterface_payload : signal is true;
   signal IBusSimplePlugin_decodePrediction_cmd_hadBranch : std_logic;
   signal IBusSimplePlugin_decodePrediction_rsp_wasWrong : std_logic;
   signal IBusSimplePlugin_pcValids_0 : std_logic;
@@ -1297,13 +1290,13 @@ architecture arch of VexRiscv is
   signal zz_95 : std_logic;
   signal zz_96 : std_logic;
   signal zz_97 : std_logic;
-  signal zz_98 : Src1CtrlEnum_defaultEncoding_type;
-  signal zz_99 : EnvCtrlEnum_defaultEncoding_type;
-  signal zz_100 : AluCtrlEnum_defaultEncoding_type;
-  signal zz_101 : Src2CtrlEnum_defaultEncoding_type;
-  signal zz_102 : ShiftCtrlEnum_defaultEncoding_type;
-  signal zz_103 : BranchCtrlEnum_defaultEncoding_type;
-  signal zz_104 : AluBitwiseCtrlEnum_defaultEncoding_type;
+  signal zz_98 : Src2CtrlEnum_defaultEncoding_type;
+  signal zz_99 : AluBitwiseCtrlEnum_defaultEncoding_type;
+  signal zz_100 : Src1CtrlEnum_defaultEncoding_type;
+  signal zz_101 : AluCtrlEnum_defaultEncoding_type;
+  signal zz_102 : EnvCtrlEnum_defaultEncoding_type;
+  signal zz_103 : ShiftCtrlEnum_defaultEncoding_type;
+  signal zz_104 : BranchCtrlEnum_defaultEncoding_type;
   signal decode_RegFilePlugin_regFileReadAddress1 : unsigned(4 downto 0);
   signal decode_RegFilePlugin_regFileReadAddress2 : unsigned(4 downto 0);
   signal decode_RegFilePlugin_rs1Data : std_logic_vector(31 downto 0);
@@ -1369,236 +1362,237 @@ architecture arch of VexRiscv is
   signal DebugPlugin_busReadDataReg : std_logic_vector(31 downto 0);
   signal zz_142 : std_logic;
   signal DebugPlugin_resetIt_regNext : std_logic;
-  signal decode_to_execute_SRC2_FORCE_ZERO : std_logic;
-  signal decode_to_execute_SRC_LESS_UNSIGNED : std_logic;
-  signal decode_to_execute_CSR_READ_OPCODE : std_logic;
-  signal decode_to_execute_SRC1_CTRL : Src1CtrlEnum_defaultEncoding_type;
-  signal decode_to_execute_ALU_CTRL : AluCtrlEnum_defaultEncoding_type;
-  signal execute_to_memory_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
-  signal memory_to_writeBack_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
-  signal decode_to_execute_SRC_USE_SUB_LESS : std_logic;
-  signal memory_to_writeBack_MEMORY_READ_DATA : std_logic_vector(31 downto 0);
-  signal decode_to_execute_RS1 : std_logic_vector(31 downto 0);
-  signal execute_to_memory_BRANCH_DO : std_logic;
-  signal decode_to_execute_MEMORY_ENABLE : std_logic;
-  signal execute_to_memory_MEMORY_ENABLE : std_logic;
-  signal memory_to_writeBack_MEMORY_ENABLE : std_logic;
-  signal decode_to_execute_CSR_WRITE_OPCODE : std_logic;
-  signal decode_to_execute_SRC2_CTRL : Src2CtrlEnum_defaultEncoding_type;
-  signal decode_to_execute_BYPASSABLE_MEMORY_STAGE : std_logic;
-  signal execute_to_memory_BYPASSABLE_MEMORY_STAGE : std_logic;
-  signal execute_to_memory_BRANCH_CALC : unsigned(31 downto 0);
-  signal decode_to_execute_FORMAL_PC_NEXT : unsigned(31 downto 0);
-  signal execute_to_memory_FORMAL_PC_NEXT : unsigned(31 downto 0);
-  signal memory_to_writeBack_FORMAL_PC_NEXT : unsigned(31 downto 0);
-  signal decode_to_execute_PC : unsigned(31 downto 0);
-  signal execute_to_memory_PC : unsigned(31 downto 0);
-  signal memory_to_writeBack_PC : unsigned(31 downto 0);
-  signal decode_to_execute_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
-  signal execute_to_memory_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
-  signal memory_to_writeBack_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
-  signal decode_to_execute_BYPASSABLE_EXECUTE_STAGE : std_logic;
-  signal decode_to_execute_ALU_BITWISE_CTRL : AluBitwiseCtrlEnum_defaultEncoding_type;
-  signal decode_to_execute_INSTRUCTION : std_logic_vector(31 downto 0);
-  signal execute_to_memory_INSTRUCTION : std_logic_vector(31 downto 0);
-  signal memory_to_writeBack_INSTRUCTION : std_logic_vector(31 downto 0);
-  signal execute_to_memory_SHIFT_RIGHT : std_logic_vector(31 downto 0);
-  signal decode_to_execute_SHIFT_CTRL : ShiftCtrlEnum_defaultEncoding_type;
-  signal execute_to_memory_SHIFT_CTRL : ShiftCtrlEnum_defaultEncoding_type;
-  signal decode_to_execute_IS_CSR : std_logic;
-  signal decode_to_execute_DO_EBREAK : std_logic;
-  signal decode_to_execute_PREDICTION_HAD_BRANCHED2 : std_logic;
-  signal execute_to_memory_ALIGNEMENT_FAULT : std_logic;
   signal execute_to_memory_MEMORY_ADDRESS_LOW : unsigned(1 downto 0);
   signal memory_to_writeBack_MEMORY_ADDRESS_LOW : unsigned(1 downto 0);
+  signal decode_to_execute_RS1 : std_logic_vector(31 downto 0);
+  signal execute_to_memory_SHIFT_RIGHT : std_logic_vector(31 downto 0);
+  signal decode_to_execute_IS_CSR : std_logic;
   signal decode_to_execute_MEMORY_STORE : std_logic;
   signal execute_to_memory_MEMORY_STORE : std_logic;
   signal memory_to_writeBack_MEMORY_STORE : std_logic;
+  signal decode_to_execute_SRC_LESS_UNSIGNED : std_logic;
+  signal execute_to_memory_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
+  signal memory_to_writeBack_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
+  signal memory_to_writeBack_MEMORY_READ_DATA : std_logic_vector(31 downto 0);
+  signal decode_to_execute_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
+  signal execute_to_memory_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
+  signal memory_to_writeBack_ENV_CTRL : EnvCtrlEnum_defaultEncoding_type;
+  signal decode_to_execute_FORMAL_PC_NEXT : unsigned(31 downto 0);
+  signal execute_to_memory_FORMAL_PC_NEXT : unsigned(31 downto 0);
+  signal memory_to_writeBack_FORMAL_PC_NEXT : unsigned(31 downto 0);
+  signal decode_to_execute_SRC1_CTRL : Src1CtrlEnum_defaultEncoding_type;
   signal decode_to_execute_RS2 : std_logic_vector(31 downto 0);
-  signal decode_to_execute_BRANCH_CTRL : BranchCtrlEnum_defaultEncoding_type;
   signal decode_to_execute_REGFILE_WRITE_VALID : std_logic;
   signal execute_to_memory_REGFILE_WRITE_VALID : std_logic;
   signal memory_to_writeBack_REGFILE_WRITE_VALID : std_logic;
+  signal decode_to_execute_PREDICTION_HAD_BRANCHED2 : std_logic;
+  signal decode_to_execute_MEMORY_ENABLE : std_logic;
+  signal execute_to_memory_MEMORY_ENABLE : std_logic;
+  signal memory_to_writeBack_MEMORY_ENABLE : std_logic;
+  signal decode_to_execute_ALU_CTRL : AluCtrlEnum_defaultEncoding_type;
+  signal decode_to_execute_SRC2_FORCE_ZERO : std_logic;
+  signal execute_to_memory_BRANCH_DO : std_logic;
+  signal decode_to_execute_BYPASSABLE_EXECUTE_STAGE : std_logic;
+  signal decode_to_execute_SRC2_CTRL : Src2CtrlEnum_defaultEncoding_type;
+  signal execute_to_memory_BRANCH_CALC : unsigned(31 downto 0);
+  signal decode_to_execute_SRC_USE_SUB_LESS : std_logic;
+  signal decode_to_execute_INSTRUCTION : std_logic_vector(31 downto 0);
+  signal execute_to_memory_INSTRUCTION : std_logic_vector(31 downto 0);
+  signal memory_to_writeBack_INSTRUCTION : std_logic_vector(31 downto 0);
+  signal decode_to_execute_DO_EBREAK : std_logic;
+  signal decode_to_execute_BRANCH_CTRL : BranchCtrlEnum_defaultEncoding_type;
+  signal decode_to_execute_ALU_BITWISE_CTRL : AluBitwiseCtrlEnum_defaultEncoding_type;
+  signal decode_to_execute_BYPASSABLE_MEMORY_STAGE : std_logic;
+  signal execute_to_memory_BYPASSABLE_MEMORY_STAGE : std_logic;
+  signal decode_to_execute_CSR_WRITE_OPCODE : std_logic;
+  signal decode_to_execute_SHIFT_CTRL : ShiftCtrlEnum_defaultEncoding_type;
+  signal execute_to_memory_SHIFT_CTRL : ShiftCtrlEnum_defaultEncoding_type;
+  signal execute_to_memory_ALIGNEMENT_FAULT : std_logic;
+  signal decode_to_execute_PC : unsigned(31 downto 0);
+  signal execute_to_memory_PC : unsigned(31 downto 0);
+  signal memory_to_writeBack_PC : unsigned(31 downto 0);
+  signal decode_to_execute_CSR_READ_OPCODE : std_logic;
   signal zz_143 : unsigned(2 downto 0);
   signal execute_CsrPlugin_csr_768 : std_logic;
   signal execute_CsrPlugin_csr_836 : std_logic;
   signal execute_CsrPlugin_csr_772 : std_logic;
+  signal execute_CsrPlugin_csr_833 : std_logic;
   signal execute_CsrPlugin_csr_834 : std_logic;
+  signal execute_CsrPlugin_csr_835 : std_logic;
+  signal execute_CsrPlugin_csr_3072 : std_logic;
+  signal execute_CsrPlugin_csr_3200 : std_logic;
   signal zz_144 : std_logic_vector(31 downto 0);
   signal zz_145 : std_logic_vector(31 downto 0);
   signal zz_146 : std_logic_vector(31 downto 0);
   signal zz_147 : std_logic_vector(31 downto 0);
+  signal zz_148 : std_logic_vector(31 downto 0);
+  signal zz_149 : std_logic_vector(31 downto 0);
+  signal zz_150 : std_logic_vector(31 downto 0);
+  signal zz_151 : std_logic_vector(31 downto 0);
   type RegFilePlugin_regFile_type is array (0 to 31) of std_logic_vector(31 downto 0);
   signal RegFilePlugin_regFile : RegFilePlugin_regFile_type;
 begin
-  dBus_cmd_payload_address <= zz_152;
-  dBus_cmd_payload_size <= zz_153;
-  debug_bus_cmd_ready <= zz_154;
-  zz_156 <= (writeBack_arbitration_isValid and writeBack_REGFILE_WRITE_VALID);
-  zz_157 <= pkg_toStdLogic(true);
-  zz_158 <= (memory_arbitration_isValid and memory_REGFILE_WRITE_VALID);
-  zz_159 <= (execute_arbitration_isValid and execute_REGFILE_WRITE_VALID);
-  zz_160 <= (execute_arbitration_isValid and execute_IS_CSR);
-  zz_161 <= (execute_arbitration_isValid and execute_DO_EBREAK);
-  zz_162 <= pkg_toStdLogic(pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_isValid),pkg_toStdLogicVector(memory_arbitration_isValid)) /= pkg_stdLogicVector("00")) = pkg_toStdLogic(false));
-  zz_163 <= (CsrPlugin_hadException or CsrPlugin_interruptJump);
-  zz_164 <= (writeBack_arbitration_isValid and pkg_toStdLogic(writeBack_ENV_CTRL = EnvCtrlEnum_defaultEncoding_XRET));
-  zz_165 <= (DebugPlugin_stepIt and IBusSimplePlugin_incomingInstruction);
-  zz_166 <= pkg_extract(writeBack_INSTRUCTION,29,28);
-  zz_167 <= (writeBack_arbitration_isValid and writeBack_REGFILE_WRITE_VALID);
-  zz_168 <= (pkg_toStdLogic(false) or (not pkg_toStdLogic(true)));
-  zz_169 <= (memory_arbitration_isValid and memory_REGFILE_WRITE_VALID);
-  zz_170 <= (pkg_toStdLogic(false) or (not memory_BYPASSABLE_MEMORY_STAGE));
-  zz_171 <= (execute_arbitration_isValid and execute_REGFILE_WRITE_VALID);
-  zz_172 <= (pkg_toStdLogic(false) or (not execute_BYPASSABLE_EXECUTE_STAGE));
-  zz_173 <= pkg_extract(debug_bus_cmd_payload_address,7,2);
-  zz_174 <= (CsrPlugin_mstatus_MIE or pkg_toStdLogic(CsrPlugin_privilege < pkg_unsigned("11")));
-  zz_175 <= ((zz_91 and pkg_toStdLogic(true)) and (not pkg_toStdLogic(false)));
-  zz_176 <= ((zz_92 and pkg_toStdLogic(true)) and (not pkg_toStdLogic(false)));
-  zz_177 <= ((zz_93 and pkg_toStdLogic(true)) and (not pkg_toStdLogic(false)));
-  zz_178 <= pkg_extract(writeBack_INSTRUCTION,13,12);
-  zz_179 <= pkg_extract(execute_INSTRUCTION,13);
-  zz_180 <= pkg_toStdLogic(true);
-  zz_181 <= pkg_toStdLogic(true);
-  zz_182 <= unsigned(pkg_cat(pkg_toStdLogicVector(zz_57),pkg_toStdLogicVector(zz_56)));
-  zz_183 <= pkg_toStdLogicVector(pkg_extract(decode_INSTRUCTION,31));
-  zz_184 <= pkg_extract(decode_INSTRUCTION,19,12);
-  zz_185 <= pkg_extract(decode_INSTRUCTION,20);
-  zz_186 <= pkg_toStdLogicVector(pkg_extract(decode_INSTRUCTION,31));
-  zz_187 <= pkg_toStdLogicVector(pkg_extract(decode_INSTRUCTION,7));
-  zz_188 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000001010000")) = pkg_stdLogicVector("00000000000000000010000000010000"));
-  zz_189 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000001000001010000")) = pkg_stdLogicVector("00000000000000000000000000010000"));
-  zz_190 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000100000"));
-  zz_191 <= pkg_stdLogicVector("00000000000000000000000000100000");
-  zz_192 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_199) = pkg_stdLogicVector("00000000000000000000000001000000")));
-  zz_193 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_200 = zz_201)),pkg_toStdLogicVector(pkg_toStdLogic(zz_202 = zz_203)));
-  zz_194 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_204) = pkg_stdLogicVector("00000000000000000001000000000000")));
-  zz_195 <= pkg_stdLogicVector("0");
-  zz_196 <= pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_205 = zz_206)) /= pkg_stdLogicVector("0"));
-  zz_197 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_207,zz_208) /= pkg_stdLogicVector("00")));
-  zz_198 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_209 /= zz_210)),pkg_cat(pkg_toStdLogicVector(zz_211),pkg_cat(zz_212,zz_213)));
-  zz_199 <= pkg_stdLogicVector("00000000000000000000000001010000");
-  zz_200 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000111000"));
-  zz_201 <= pkg_stdLogicVector("00000000000000000000000000000000");
-  zz_202 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000100000011000001000000"));
-  zz_203 <= pkg_stdLogicVector("00000000000000000000000001000000");
-  zz_204 <= pkg_stdLogicVector("00000000000000000001000000000000");
-  zz_205 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000011000000000000"));
-  zz_206 <= pkg_stdLogicVector("00000000000000000010000000000000");
-  zz_207 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_214) = pkg_stdLogicVector("00000000000000000001000001010000")));
-  zz_208 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_215) = pkg_stdLogicVector("00000000000000000010000001010000")));
-  zz_209 <= pkg_cat(pkg_toStdLogicVector(zz_96),pkg_toStdLogicVector(pkg_toStdLogic(zz_216 = zz_217)));
-  zz_210 <= pkg_stdLogicVector("00");
-  zz_211 <= pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_218 = zz_219)) /= pkg_stdLogicVector("0"));
-  zz_212 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_toStdLogicVector(zz_220) /= pkg_stdLogicVector("0")));
-  zz_213 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_221 /= zz_222)),pkg_cat(pkg_toStdLogicVector(zz_223),pkg_cat(zz_224,zz_225)));
-  zz_214 <= pkg_stdLogicVector("00000000000000000001000001010000");
-  zz_215 <= pkg_stdLogicVector("00000000000000000010000001010000");
-  zz_216 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000011100"));
-  zz_217 <= pkg_stdLogicVector("00000000000000000000000000000100");
-  zz_218 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001011000"));
-  zz_219 <= pkg_stdLogicVector("00000000000000000000000001000000");
-  zz_220 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001011000")) = pkg_stdLogicVector("00000000000000000000000000000000"));
-  zz_221 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000111000001010100")) = pkg_stdLogicVector("00000000000000000101000000010000")));
-  zz_222 <= pkg_stdLogicVector("0");
-  zz_223 <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_226 = zz_227)),pkg_toStdLogicVector(pkg_toStdLogic(zz_228 = zz_229))) /= pkg_stdLogicVector("00"));
-  zz_224 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_230),pkg_toStdLogicVector(zz_231)) /= pkg_stdLogicVector("00")));
-  zz_225 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_232,zz_233) /= pkg_stdLogicVector("00"))),pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_234 /= zz_235)),pkg_cat(pkg_toStdLogicVector(zz_236),pkg_cat(zz_237,zz_238))));
-  zz_226 <= (decode_INSTRUCTION and pkg_stdLogicVector("01000000000000000011000001010100"));
-  zz_227 <= pkg_stdLogicVector("01000000000000000001000000010000");
-  zz_228 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000111000001010100"));
-  zz_229 <= pkg_stdLogicVector("00000000000000000001000000010000");
-  zz_230 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000000010000")) = pkg_stdLogicVector("00000000000000000010000000000000"));
-  zz_231 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000101000000000000")) = pkg_stdLogicVector("00000000000000000001000000000000"));
-  zz_232 <= pkg_toStdLogicVector(zz_97);
-  zz_233 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_239) = pkg_stdLogicVector("00000000000000000000000000100000")));
-  zz_234 <= pkg_cat(pkg_toStdLogicVector(zz_97),pkg_toStdLogicVector(pkg_toStdLogic(zz_240 = zz_241)));
-  zz_235 <= pkg_stdLogicVector("00");
-  zz_236 <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_242),pkg_cat(zz_243,zz_244)) /= pkg_stdLogicVector("0000"));
-  zz_237 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_245,zz_246) /= pkg_stdLogicVector("00")));
-  zz_238 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_247 /= zz_248)),pkg_cat(pkg_toStdLogicVector(zz_249),pkg_cat(zz_250,zz_251)));
-  zz_239 <= pkg_stdLogicVector("00000000000000000000000001110000");
-  zz_240 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000100000"));
-  zz_241 <= pkg_stdLogicVector("00000000000000000000000000000000");
-  zz_242 <= pkg_toStdLogic((decode_INSTRUCTION and zz_252) = pkg_stdLogicVector("00000000000000000000000000000000"));
-  zz_243 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_253 = zz_254));
-  zz_244 <= pkg_cat(pkg_toStdLogicVector(zz_255),pkg_toStdLogicVector(zz_256));
-  zz_245 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_257 = zz_258));
-  zz_246 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_259 = zz_260));
-  zz_247 <= pkg_cat(pkg_toStdLogicVector(zz_261),pkg_cat(zz_262,zz_263));
-  zz_248 <= pkg_stdLogicVector("000");
-  zz_249 <= pkg_toStdLogic(pkg_toStdLogicVector(zz_264) /= pkg_stdLogicVector("0"));
-  zz_250 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_265 /= zz_266));
-  zz_251 <= pkg_cat(pkg_toStdLogicVector(zz_267),pkg_cat(zz_268,zz_269));
-  zz_252 <= pkg_stdLogicVector("00000000000000000000000001000100");
-  zz_253 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000011000"));
-  zz_254 <= pkg_stdLogicVector("00000000000000000000000000000000");
-  zz_255 <= pkg_toStdLogic((decode_INSTRUCTION and zz_270) = pkg_stdLogicVector("00000000000000000010000000000000"));
-  zz_256 <= pkg_toStdLogic((decode_INSTRUCTION and zz_271) = pkg_stdLogicVector("00000000000000000001000000000000"));
-  zz_257 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000110100"));
-  zz_258 <= pkg_stdLogicVector("00000000000000000000000000100000");
-  zz_259 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001100100"));
-  zz_260 <= pkg_stdLogicVector("00000000000000000000000000100000");
-  zz_261 <= pkg_toStdLogic((decode_INSTRUCTION and zz_272) = pkg_stdLogicVector("00000000000000000000000001000000"));
-  zz_262 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_273 = zz_274));
-  zz_263 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_275 = zz_276));
-  zz_264 <= pkg_toStdLogic((decode_INSTRUCTION and zz_277) = pkg_stdLogicVector("00000000000000000100000000010000"));
-  zz_265 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_278 = zz_279));
-  zz_266 <= pkg_stdLogicVector("0");
-  zz_267 <= pkg_toStdLogic(pkg_cat(zz_280,zz_281) /= pkg_stdLogicVector("000000"));
-  zz_268 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_282 /= zz_283));
-  zz_269 <= pkg_cat(pkg_toStdLogicVector(zz_284),pkg_cat(zz_285,zz_286));
-  zz_270 <= pkg_stdLogicVector("00000000000000000110000000000100");
-  zz_271 <= pkg_stdLogicVector("00000000000000000101000000000100");
-  zz_272 <= pkg_stdLogicVector("00000000000000000000000001000100");
-  zz_273 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000000010100"));
-  zz_274 <= pkg_stdLogicVector("00000000000000000010000000010000");
-  zz_275 <= (decode_INSTRUCTION and pkg_stdLogicVector("01000000000000000000000000110100"));
-  zz_276 <= pkg_stdLogicVector("01000000000000000000000000110000");
-  zz_277 <= pkg_stdLogicVector("00000000000000000100000000010100");
-  zz_278 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000110000000010100"));
-  zz_279 <= pkg_stdLogicVector("00000000000000000010000000010000");
-  zz_280 <= pkg_toStdLogicVector(zz_96);
-  zz_281 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_287 = zz_288)),pkg_cat(pkg_toStdLogicVector(zz_289),pkg_cat(zz_290,zz_291)));
-  zz_282 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_292) = pkg_stdLogicVector("00000000000000000000000001010000")));
-  zz_283 <= pkg_stdLogicVector("0");
-  zz_284 <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_293),pkg_toStdLogicVector(zz_95)) /= pkg_stdLogicVector("00"));
-  zz_285 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_294,zz_295) /= pkg_stdLogicVector("00")));
-  zz_286 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_296 /= zz_297)),pkg_cat(pkg_toStdLogicVector(zz_298),pkg_toStdLogicVector(zz_299)));
-  zz_287 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000001000000010000"));
-  zz_288 <= pkg_stdLogicVector("00000000000000000001000000010000");
-  zz_289 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000000010000")) = pkg_stdLogicVector("00000000000000000010000000010000"));
-  zz_290 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_300) = pkg_stdLogicVector("00000000000000000000000000010000")));
-  zz_291 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_301 = zz_302)),pkg_toStdLogicVector(pkg_toStdLogic(zz_303 = zz_304)));
-  zz_292 <= pkg_stdLogicVector("00000000000100000011000001010000");
-  zz_293 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000010100")) = pkg_stdLogicVector("00000000000000000000000000000100"));
-  zz_294 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_305) = pkg_stdLogicVector("00000000000000000000000000000100")));
-  zz_295 <= pkg_toStdLogicVector(zz_95);
-  zz_296 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_306) = pkg_stdLogicVector("00000000000000000000000000100100")));
-  zz_297 <= pkg_stdLogicVector("0");
-  zz_298 <= pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_307 = zz_308)) /= pkg_stdLogicVector("0"));
-  zz_299 <= pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_309 = zz_310)) /= pkg_stdLogicVector("0"));
-  zz_300 <= pkg_stdLogicVector("00000000000000000000000001010000");
-  zz_301 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000001100"));
-  zz_302 <= pkg_stdLogicVector("00000000000000000000000000000100");
-  zz_303 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000101000"));
-  zz_304 <= pkg_stdLogicVector("00000000000000000000000000000000");
-  zz_305 <= pkg_stdLogicVector("00000000000000000000000001000100");
-  zz_306 <= pkg_stdLogicVector("00000000000000000000000001100100");
-  zz_307 <= (decode_INSTRUCTION and pkg_stdLogicVector("00010000000000000011000001010000"));
-  zz_308 <= pkg_stdLogicVector("00000000000000000000000001010000");
-  zz_309 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000010000"));
-  zz_310 <= pkg_stdLogicVector("00000000000000000000000000010000");
+  dBus_cmd_payload_address <= zz_156;
+  dBus_cmd_payload_size <= zz_157;
+  debug_bus_cmd_ready <= zz_158;
+  zz_160 <= (writeBack_arbitration_isValid and writeBack_REGFILE_WRITE_VALID);
+  zz_161 <= pkg_toStdLogic(true);
+  zz_162 <= (memory_arbitration_isValid and memory_REGFILE_WRITE_VALID);
+  zz_163 <= (execute_arbitration_isValid and execute_REGFILE_WRITE_VALID);
+  zz_164 <= (execute_arbitration_isValid and execute_IS_CSR);
+  zz_165 <= (execute_arbitration_isValid and execute_DO_EBREAK);
+  zz_166 <= pkg_toStdLogic(pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_isValid),pkg_toStdLogicVector(memory_arbitration_isValid)) /= pkg_stdLogicVector("00")) = pkg_toStdLogic(false));
+  zz_167 <= (CsrPlugin_hadException or CsrPlugin_interruptJump);
+  zz_168 <= (writeBack_arbitration_isValid and pkg_toStdLogic(writeBack_ENV_CTRL = EnvCtrlEnum_defaultEncoding_XRET));
+  zz_169 <= (DebugPlugin_stepIt and IBusSimplePlugin_incomingInstruction);
+  zz_170 <= pkg_extract(writeBack_INSTRUCTION,29,28);
+  zz_171 <= (writeBack_arbitration_isValid and writeBack_REGFILE_WRITE_VALID);
+  zz_172 <= (pkg_toStdLogic(false) or (not pkg_toStdLogic(true)));
+  zz_173 <= (memory_arbitration_isValid and memory_REGFILE_WRITE_VALID);
+  zz_174 <= (pkg_toStdLogic(false) or (not memory_BYPASSABLE_MEMORY_STAGE));
+  zz_175 <= (execute_arbitration_isValid and execute_REGFILE_WRITE_VALID);
+  zz_176 <= (pkg_toStdLogic(false) or (not execute_BYPASSABLE_EXECUTE_STAGE));
+  zz_177 <= pkg_extract(debug_bus_cmd_payload_address,7,2);
+  zz_178 <= (CsrPlugin_mstatus_MIE or pkg_toStdLogic(CsrPlugin_privilege < pkg_unsigned("11")));
+  zz_179 <= ((zz_91 and pkg_toStdLogic(true)) and (not pkg_toStdLogic(false)));
+  zz_180 <= ((zz_92 and pkg_toStdLogic(true)) and (not pkg_toStdLogic(false)));
+  zz_181 <= ((zz_93 and pkg_toStdLogic(true)) and (not pkg_toStdLogic(false)));
+  zz_182 <= pkg_extract(writeBack_INSTRUCTION,13,12);
+  zz_183 <= pkg_extract(execute_INSTRUCTION,13);
+  zz_184 <= pkg_toStdLogic(true);
+  zz_185 <= pkg_toStdLogic(true);
+  zz_186 <= unsigned(pkg_cat(pkg_toStdLogicVector(zz_57),pkg_toStdLogicVector(zz_56)));
+  zz_187 <= pkg_toStdLogicVector(pkg_extract(decode_INSTRUCTION,31));
+  zz_188 <= pkg_extract(decode_INSTRUCTION,19,12);
+  zz_189 <= pkg_extract(decode_INSTRUCTION,20);
+  zz_190 <= pkg_toStdLogicVector(pkg_extract(decode_INSTRUCTION,31));
+  zz_191 <= pkg_toStdLogicVector(pkg_extract(decode_INSTRUCTION,7));
+  zz_192 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000011100"));
+  zz_193 <= pkg_stdLogicVector("00000000000000000000000000000100");
+  zz_194 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001011000"));
+  zz_195 <= pkg_stdLogicVector("00000000000000000000000001000000");
+  zz_196 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_203) = pkg_stdLogicVector("00000000000000000010000000000000")));
+  zz_197 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_204) = pkg_stdLogicVector("00000000000000000001000000000000")));
+  zz_198 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_205 = zz_206)),pkg_cat(pkg_toStdLogicVector(zz_207),pkg_toStdLogicVector(zz_208)));
+  zz_199 <= pkg_stdLogicVector("000");
+  zz_200 <= pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_209 = zz_210)) /= pkg_stdLogicVector("0"));
+  zz_201 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_211,zz_212) /= pkg_stdLogicVector("00")));
+  zz_202 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_213 /= zz_214)),pkg_cat(pkg_toStdLogicVector(zz_215),pkg_cat(zz_216,zz_217)));
+  zz_203 <= pkg_stdLogicVector("00000000000000000010000000010000");
+  zz_204 <= pkg_stdLogicVector("00000000000000000101000000000000");
+  zz_205 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001000100"));
+  zz_206 <= pkg_stdLogicVector("00000000000000000000000001000000");
+  zz_207 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000000010100")) = pkg_stdLogicVector("00000000000000000010000000010000"));
+  zz_208 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("01000000000000000000000000110100")) = pkg_stdLogicVector("01000000000000000000000000110000"));
+  zz_209 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000111000001010100"));
+  zz_210 <= pkg_stdLogicVector("00000000000000000101000000010000");
+  zz_211 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_218) = pkg_stdLogicVector("01000000000000000001000000010000")));
+  zz_212 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_219) = pkg_stdLogicVector("00000000000000000001000000010000")));
+  zz_213 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_220) = pkg_stdLogicVector("00000000000000000000000000010000")));
+  zz_214 <= pkg_stdLogicVector("0");
+  zz_215 <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_221),pkg_cat(zz_222,zz_223)) /= pkg_stdLogicVector("0000"));
+  zz_216 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_224,zz_225) /= pkg_stdLogicVector("000")));
+  zz_217 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_226 /= zz_227)),pkg_cat(pkg_toStdLogicVector(zz_228),pkg_cat(zz_229,zz_230)));
+  zz_218 <= pkg_stdLogicVector("01000000000000000011000001010100");
+  zz_219 <= pkg_stdLogicVector("00000000000000000111000001010100");
+  zz_220 <= pkg_stdLogicVector("00000000000000000000000000010000");
+  zz_221 <= pkg_toStdLogic((decode_INSTRUCTION and zz_231) = pkg_stdLogicVector("00000000000000000000000000000000"));
+  zz_222 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_232 = zz_233));
+  zz_223 <= pkg_cat(pkg_toStdLogicVector(zz_234),pkg_toStdLogicVector(zz_235));
+  zz_224 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_236 = zz_237));
+  zz_225 <= pkg_cat(pkg_toStdLogicVector(zz_238),pkg_toStdLogicVector(zz_239));
+  zz_226 <= pkg_cat(pkg_toStdLogicVector(zz_97),pkg_cat(zz_240,zz_241));
+  zz_227 <= pkg_stdLogicVector("000000");
+  zz_228 <= pkg_toStdLogic(pkg_toStdLogicVector(zz_242) /= pkg_stdLogicVector("0"));
+  zz_229 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_243 /= zz_244));
+  zz_230 <= pkg_cat(pkg_toStdLogicVector(zz_245),pkg_cat(zz_246,zz_247));
+  zz_231 <= pkg_stdLogicVector("00000000000000000000000001000100");
+  zz_232 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000011000"));
+  zz_233 <= pkg_stdLogicVector("00000000000000000000000000000000");
+  zz_234 <= pkg_toStdLogic((decode_INSTRUCTION and zz_248) = pkg_stdLogicVector("00000000000000000010000000000000"));
+  zz_235 <= pkg_toStdLogic((decode_INSTRUCTION and zz_249) = pkg_stdLogicVector("00000000000000000001000000000000"));
+  zz_236 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001010000"));
+  zz_237 <= pkg_stdLogicVector("00000000000000000000000001000000");
+  zz_238 <= pkg_toStdLogic((decode_INSTRUCTION and zz_250) = pkg_stdLogicVector("00000000000000000000000000000000"));
+  zz_239 <= pkg_toStdLogic((decode_INSTRUCTION and zz_251) = pkg_stdLogicVector("00000000000000000000000001000000"));
+  zz_240 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_252 = zz_253));
+  zz_241 <= pkg_cat(pkg_toStdLogicVector(zz_254),pkg_cat(zz_255,zz_256));
+  zz_242 <= pkg_toStdLogic((decode_INSTRUCTION and zz_257) = pkg_stdLogicVector("00000000000000000000000000100000"));
+  zz_243 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_258 = zz_259));
+  zz_244 <= pkg_stdLogicVector("0");
+  zz_245 <= pkg_toStdLogic(pkg_toStdLogicVector(zz_260) /= pkg_stdLogicVector("0"));
+  zz_246 <= pkg_toStdLogicVector(pkg_toStdLogic(zz_261 /= zz_262));
+  zz_247 <= pkg_cat(pkg_toStdLogicVector(zz_263),pkg_cat(zz_264,zz_265));
+  zz_248 <= pkg_stdLogicVector("00000000000000000110000000000100");
+  zz_249 <= pkg_stdLogicVector("00000000000000000101000000000100");
+  zz_250 <= pkg_stdLogicVector("00000000000000000000000000111000");
+  zz_251 <= pkg_stdLogicVector("00000000000100000011000001000000");
+  zz_252 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000001000000010000"));
+  zz_253 <= pkg_stdLogicVector("00000000000000000001000000010000");
+  zz_254 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000000010000")) = pkg_stdLogicVector("00000000000000000010000000010000"));
+  zz_255 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_266) = pkg_stdLogicVector("00000000000000000000000000010000")));
+  zz_256 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_267 = zz_268)),pkg_toStdLogicVector(pkg_toStdLogic(zz_269 = zz_270)));
+  zz_257 <= pkg_stdLogicVector("00000000000000000000000000100000");
+  zz_258 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000100000011000001010000"));
+  zz_259 <= pkg_stdLogicVector("00000000000000000000000001010000");
+  zz_260 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001011000")) = pkg_stdLogicVector("00000000000000000000000000000000"));
+  zz_261 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_271) = pkg_stdLogicVector("00000000000000000100000000010000")));
+  zz_262 <= pkg_stdLogicVector("0");
+  zz_263 <= pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_272 = zz_273)) /= pkg_stdLogicVector("0"));
+  zz_264 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_274,zz_275) /= pkg_stdLogicVector("00")));
+  zz_265 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_276 /= zz_277)),pkg_cat(pkg_toStdLogicVector(zz_278),pkg_cat(zz_279,zz_280)));
+  zz_266 <= pkg_stdLogicVector("00000000000000000000000001010000");
+  zz_267 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000001100"));
+  zz_268 <= pkg_stdLogicVector("00000000000000000000000000000100");
+  zz_269 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000101000"));
+  zz_270 <= pkg_stdLogicVector("00000000000000000000000000000000");
+  zz_271 <= pkg_stdLogicVector("00000000000000000100000000010100");
+  zz_272 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000110000000010100"));
+  zz_273 <= pkg_stdLogicVector("00000000000000000010000000010000");
+  zz_274 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_281) = pkg_stdLogicVector("00000000000000000000000000000100")));
+  zz_275 <= pkg_toStdLogicVector(zz_96);
+  zz_276 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_282 = zz_283)),pkg_toStdLogicVector(zz_96));
+  zz_277 <= pkg_stdLogicVector("00");
+  zz_278 <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_284),pkg_toStdLogicVector(zz_285)) /= pkg_stdLogicVector("00"));
+  zz_279 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_toStdLogicVector(zz_286) /= pkg_stdLogicVector("0")));
+  zz_280 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_287 /= zz_288)),pkg_cat(pkg_toStdLogicVector(zz_289),pkg_cat(zz_290,zz_291)));
+  zz_281 <= pkg_stdLogicVector("00000000000000000000000000010100");
+  zz_282 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001000100"));
+  zz_283 <= pkg_stdLogicVector("00000000000000000000000000000100");
+  zz_284 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000110100")) = pkg_stdLogicVector("00000000000000000000000000100000"));
+  zz_285 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001100100")) = pkg_stdLogicVector("00000000000000000000000000100000"));
+  zz_286 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000001000000000000")) = pkg_stdLogicVector("00000000000000000001000000000000"));
+  zz_287 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_292) = pkg_stdLogicVector("00000000000000000010000000000000")));
+  zz_288 <= pkg_stdLogicVector("0");
+  zz_289 <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_293),pkg_toStdLogicVector(zz_294)) /= pkg_stdLogicVector("00"));
+  zz_290 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_toStdLogicVector(zz_295) /= pkg_stdLogicVector("0")));
+  zz_291 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_296 /= zz_297)),pkg_cat(pkg_toStdLogicVector(zz_298),pkg_cat(zz_299,zz_300)));
+  zz_292 <= pkg_stdLogicVector("00000000000000000011000000000000");
+  zz_293 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000001000001010000")) = pkg_stdLogicVector("00000000000000000001000001010000"));
+  zz_294 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000001010000")) = pkg_stdLogicVector("00000000000000000010000001010000"));
+  zz_295 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001100100")) = pkg_stdLogicVector("00000000000000000000000000100100"));
+  zz_296 <= pkg_cat(pkg_toStdLogicVector(zz_95),pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and zz_301) = pkg_stdLogicVector("00000000000000000000000000100000"))));
+  zz_297 <= pkg_stdLogicVector("00");
+  zz_298 <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_95),pkg_toStdLogicVector(pkg_toStdLogic(zz_302 = zz_303))) /= pkg_stdLogicVector("00"));
+  zz_299 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_304 = zz_305)) /= pkg_stdLogicVector("0")));
+  zz_300 <= pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_95),pkg_cat(zz_306,zz_307)) /= pkg_stdLogicVector("000")));
+  zz_301 <= pkg_stdLogicVector("00000000000000000000000001110000");
+  zz_302 <= (decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000100000"));
+  zz_303 <= pkg_stdLogicVector("00000000000000000000000000000000");
+  zz_304 <= (decode_INSTRUCTION and pkg_stdLogicVector("00010000000000000011000001010000"));
+  zz_305 <= pkg_stdLogicVector("00000000000000000000000001010000");
+  zz_306 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000010000001010000")) = pkg_stdLogicVector("00000000000000000010000000010000")));
+  zz_307 <= pkg_toStdLogicVector(pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000001000001010000")) = pkg_stdLogicVector("00000000000000000000000000010000")));
+  zz_308 <= pkg_toStdLogicVector(pkg_extract(execute_INSTRUCTION,31));
+  zz_309 <= pkg_extract(execute_INSTRUCTION,19,12);
+  zz_310 <= pkg_extract(execute_INSTRUCTION,20);
   zz_311 <= pkg_toStdLogicVector(pkg_extract(execute_INSTRUCTION,31));
-  zz_312 <= pkg_extract(execute_INSTRUCTION,19,12);
-  zz_313 <= pkg_extract(execute_INSTRUCTION,20);
-  zz_314 <= pkg_toStdLogicVector(pkg_extract(execute_INSTRUCTION,31));
-  zz_315 <= pkg_toStdLogicVector(pkg_extract(execute_INSTRUCTION,7));
+  zz_312 <= pkg_toStdLogicVector(pkg_extract(execute_INSTRUCTION,7));
   process(clk)
   begin
     if rising_edge(clk) then
-      if zz_180 = '1' then
-        zz_150 <= RegFilePlugin_regFile(to_integer(decode_RegFilePlugin_regFileReadAddress1));
+      if zz_184 = '1' then
+        zz_154 <= RegFilePlugin_regFile(to_integer(decode_RegFilePlugin_regFileReadAddress1));
       end if;
     end if;
   end process;
@@ -1606,8 +1600,8 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if zz_181 = '1' then
-        zz_151 <= RegFilePlugin_regFile(to_integer(decode_RegFilePlugin_regFileReadAddress2));
+      if zz_185 = '1' then
+        zz_155 <= RegFilePlugin_regFile(to_integer(decode_RegFilePlugin_regFileReadAddress2));
       end if;
     end if;
   end process;
@@ -1628,67 +1622,67 @@ begin
       io_push_payload_error => iBus_rsp_payload_error,
       io_push_payload_inst => iBus_rsp_payload_inst,
       io_pop_valid => IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_valid,
-      io_pop_ready => zz_148,
+      io_pop_ready => zz_152,
       io_pop_payload_error => IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_payload_error,
       io_pop_payload_inst => IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_payload_inst,
-      io_flush => zz_149,
+      io_flush => zz_153,
       io_occupancy => IBusSimplePlugin_rspJoin_rspBuffer_c_io_occupancy,
       clk => clk,
       reset => reset 
     );
-  process(zz_182,CsrPlugin_jumpInterface_payload,BranchPlugin_jumpInterface_payload,IBusSimplePlugin_predictionJumpInterface_payload)
+  process(zz_186,CsrPlugin_jumpInterface_payload,BranchPlugin_jumpInterface_payload,IBusSimplePlugin_predictionJumpInterface_payload)
   begin
-    case zz_182 is
+    case zz_186 is
       when "00" =>
-        zz_155 <= CsrPlugin_jumpInterface_payload;
+        zz_159 <= CsrPlugin_jumpInterface_payload;
       when "01" =>
-        zz_155 <= BranchPlugin_jumpInterface_payload;
+        zz_159 <= BranchPlugin_jumpInterface_payload;
       when others =>
-        zz_155 <= IBusSimplePlugin_predictionJumpInterface_payload;
+        zz_159 <= IBusSimplePlugin_predictionJumpInterface_payload;
     end case;
   end process;
 
-  zz_1 <= zz_2;
-  decode_MEMORY_STORE <= pkg_extract(pkg_extract(zz_94,24,24),0);
-  memory_MEMORY_ADDRESS_LOW <= execute_to_memory_MEMORY_ADDRESS_LOW;
-  execute_MEMORY_ADDRESS_LOW <= pkg_extract(zz_152,1,0);
-  decode_PREDICTION_HAD_BRANCHED2 <= IBusSimplePlugin_decodePrediction_cmd_hadBranch;
-  decode_DO_EBREAK <= ((not DebugPlugin_haltIt) and (decode_IS_EBREAK or pkg_toStdLogic(false)));
-  decode_IS_CSR <= pkg_extract(pkg_extract(zz_94,20,20),0);
-  zz_3 <= zz_4;
-  decode_SHIFT_CTRL <= zz_5;
-  zz_6 <= zz_7;
-  execute_SHIFT_RIGHT <= std_logic_vector(pkg_extract(pkg_shiftRight(signed(pkg_cat(pkg_toStdLogicVector((pkg_toStdLogic(execute_SHIFT_CTRL = ShiftCtrlEnum_defaultEncoding_SRA_1) and pkg_extract(execute_FullBarrelShifterPlugin_reversed,31))),execute_FullBarrelShifterPlugin_reversed)),execute_FullBarrelShifterPlugin_amplitude),31,0));
-  decode_ALU_BITWISE_CTRL <= zz_8;
-  zz_9 <= zz_10;
-  decode_BYPASSABLE_EXECUTE_STAGE <= pkg_extract(pkg_extract(zz_94,25,25),0);
-  zz_11 <= zz_12;
-  zz_13 <= zz_14;
-  decode_ENV_CTRL <= zz_15;
-  zz_16 <= zz_17;
+  decode_CSR_READ_OPCODE <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,13,7) /= pkg_stdLogicVector("0100000"));
   memory_PC <= execute_to_memory_PC;
+  zz_1 <= zz_2;
+  decode_SHIFT_CTRL <= zz_3;
+  zz_4 <= zz_5;
+  decode_CSR_WRITE_OPCODE <= (not ((pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,14,13) = pkg_stdLogicVector("01")) and pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,19,15) = pkg_stdLogicVector("00000"))) or (pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,14,13) = pkg_stdLogicVector("11")) and pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,19,15) = pkg_stdLogicVector("00000")))));
+  execute_BYPASSABLE_MEMORY_STAGE <= decode_to_execute_BYPASSABLE_MEMORY_STAGE;
+  decode_BYPASSABLE_MEMORY_STAGE <= pkg_extract(pkg_extract(zz_94,19,19),0);
+  decode_ALU_BITWISE_CTRL <= zz_6;
+  zz_7 <= zz_8;
+  zz_9 <= zz_10;
+  decode_DO_EBREAK <= ((not DebugPlugin_haltIt) and (decode_IS_EBREAK or pkg_toStdLogic(false)));
+  execute_BRANCH_CALC <= unsigned(pkg_cat(std_logic_vector(pkg_extract(execute_BranchPlugin_branchAdder,31,1)),std_logic_vector(pkg_unsigned("0"))));
+  decode_SRC2_CTRL <= zz_11;
+  zz_12 <= zz_13;
+  decode_BYPASSABLE_EXECUTE_STAGE <= pkg_extract(pkg_extract(zz_94,0,0),0);
+  execute_BRANCH_DO <= (pkg_toStdLogic(execute_PREDICTION_HAD_BRANCHED2 /= execute_BRANCH_COND_RESULT) or execute_BranchPlugin_missAlignedTarget);
+  decode_SRC2_FORCE_ZERO <= (decode_SRC_ADD_ZERO and (not decode_SRC_USE_SUB_LESS));
+  decode_ALU_CTRL <= zz_14;
+  zz_15 <= zz_16;
+  decode_MEMORY_ENABLE <= pkg_extract(pkg_extract(zz_94,13,13),0);
+  decode_PREDICTION_HAD_BRANCHED2 <= IBusSimplePlugin_decodePrediction_cmd_hadBranch;
+  decode_SRC1_CTRL <= zz_17;
+  zz_18 <= zz_19;
   writeBack_FORMAL_PC_NEXT <= memory_to_writeBack_FORMAL_PC_NEXT;
   memory_FORMAL_PC_NEXT <= execute_to_memory_FORMAL_PC_NEXT;
   execute_FORMAL_PC_NEXT <= decode_to_execute_FORMAL_PC_NEXT;
   decode_FORMAL_PC_NEXT <= (decode_PC + pkg_unsigned("00000000000000000000000000000100"));
-  execute_BRANCH_CALC <= unsigned(pkg_cat(std_logic_vector(pkg_extract(execute_BranchPlugin_branchAdder,31,1)),std_logic_vector(pkg_unsigned("0"))));
-  execute_BYPASSABLE_MEMORY_STAGE <= decode_to_execute_BYPASSABLE_MEMORY_STAGE;
-  decode_BYPASSABLE_MEMORY_STAGE <= pkg_extract(pkg_extract(zz_94,0,0),0);
-  decode_SRC2_CTRL <= zz_18;
-  zz_19 <= zz_20;
-  decode_CSR_WRITE_OPCODE <= (not ((pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,14,13) = pkg_stdLogicVector("01")) and pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,19,15) = pkg_stdLogicVector("00000"))) or (pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,14,13) = pkg_stdLogicVector("11")) and pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,19,15) = pkg_stdLogicVector("00000")))));
-  decode_MEMORY_ENABLE <= pkg_extract(pkg_extract(zz_94,17,17),0);
-  execute_BRANCH_DO <= (pkg_toStdLogic(execute_PREDICTION_HAD_BRANCHED2 /= execute_BRANCH_COND_RESULT) or execute_BranchPlugin_missAlignedTarget);
+  zz_20 <= zz_21;
+  zz_22 <= zz_23;
+  decode_ENV_CTRL <= zz_24;
+  zz_25 <= zz_26;
   memory_MEMORY_READ_DATA <= dBus_rsp_data;
   writeBack_REGFILE_WRITE_DATA <= memory_to_writeBack_REGFILE_WRITE_DATA;
   execute_REGFILE_WRITE_DATA <= zz_106;
-  decode_ALU_CTRL <= zz_21;
-  zz_22 <= zz_23;
-  decode_SRC1_CTRL <= zz_24;
-  zz_25 <= zz_26;
-  decode_CSR_READ_OPCODE <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,13,7) /= pkg_stdLogicVector("0100000"));
-  decode_SRC_LESS_UNSIGNED <= pkg_extract(pkg_extract(zz_94,14,14),0);
-  decode_SRC2_FORCE_ZERO <= (decode_SRC_ADD_ZERO and (not decode_SRC_USE_SUB_LESS));
+  decode_SRC_LESS_UNSIGNED <= pkg_extract(pkg_extract(zz_94,23,23),0);
+  decode_MEMORY_STORE <= pkg_extract(pkg_extract(zz_94,15,15),0);
+  decode_IS_CSR <= pkg_extract(pkg_extract(zz_94,5,5),0);
+  execute_SHIFT_RIGHT <= std_logic_vector(pkg_extract(pkg_shiftRight(signed(pkg_cat(pkg_toStdLogicVector((pkg_toStdLogic(execute_SHIFT_CTRL = ShiftCtrlEnum_defaultEncoding_SRA_1) and pkg_extract(execute_FullBarrelShifterPlugin_reversed,31))),execute_FullBarrelShifterPlugin_reversed)),execute_FullBarrelShifterPlugin_amplitude),31,0));
+  memory_MEMORY_ADDRESS_LOW <= execute_to_memory_MEMORY_ADDRESS_LOW;
+  execute_MEMORY_ADDRESS_LOW <= pkg_extract(zz_156,1,0);
   execute_DO_EBREAK <= decode_to_execute_DO_EBREAK;
   decode_IS_EBREAK <= pkg_extract(pkg_extract(zz_94,1,1),0);
   memory_BRANCH_CALC <= execute_to_memory_BRANCH_CALC;
@@ -1698,15 +1692,15 @@ begin
   execute_RS1 <= decode_to_execute_RS1;
   execute_BRANCH_COND_RESULT <= zz_128;
   execute_BRANCH_CTRL <= zz_27;
-  decode_RS2_USE <= pkg_extract(pkg_extract(zz_94,10,10),0);
-  decode_RS1_USE <= pkg_extract(pkg_extract(zz_94,11,11),0);
+  decode_RS2_USE <= pkg_extract(pkg_extract(zz_94,8,8),0);
+  decode_RS1_USE <= pkg_extract(pkg_extract(zz_94,18,18),0);
   execute_REGFILE_WRITE_VALID <= decode_to_execute_REGFILE_WRITE_VALID;
   execute_BYPASSABLE_EXECUTE_STAGE <= decode_to_execute_BYPASSABLE_EXECUTE_STAGE;
   memory_REGFILE_WRITE_VALID <= execute_to_memory_REGFILE_WRITE_VALID;
   memory_INSTRUCTION <= execute_to_memory_INSTRUCTION;
   memory_BYPASSABLE_MEMORY_STAGE <= execute_to_memory_BYPASSABLE_MEMORY_STAGE;
   writeBack_REGFILE_WRITE_VALID <= memory_to_writeBack_REGFILE_WRITE_VALID;
-  process(decode_RegFilePlugin_rs2Data,zz_117,zz_118,decode_INSTRUCTION,zz_119,zz_156,zz_157,zz_121,zz_50,zz_158,memory_BYPASSABLE_MEMORY_STAGE,zz_123,zz_28,zz_159,execute_BYPASSABLE_EXECUTE_STAGE,zz_125,zz_46)
+  process(decode_RegFilePlugin_rs2Data,zz_117,zz_118,decode_INSTRUCTION,zz_119,zz_160,zz_161,zz_121,zz_50,zz_162,memory_BYPASSABLE_MEMORY_STAGE,zz_123,zz_28,zz_163,execute_BYPASSABLE_EXECUTE_STAGE,zz_125,zz_46)
   begin
     decode_RS2 <= decode_RegFilePlugin_rs2Data;
     if zz_117 = '1' then
@@ -1714,21 +1708,21 @@ begin
         decode_RS2 <= zz_119;
       end if;
     end if;
-    if zz_156 = '1' then
-      if zz_157 = '1' then
+    if zz_160 = '1' then
+      if zz_161 = '1' then
         if zz_121 = '1' then
           decode_RS2 <= zz_50;
         end if;
       end if;
     end if;
-    if zz_158 = '1' then
+    if zz_162 = '1' then
       if memory_BYPASSABLE_MEMORY_STAGE = '1' then
         if zz_123 = '1' then
           decode_RS2 <= zz_28;
         end if;
       end if;
     end if;
-    if zz_159 = '1' then
+    if zz_163 = '1' then
       if execute_BYPASSABLE_EXECUTE_STAGE = '1' then
         if zz_125 = '1' then
           decode_RS2 <= zz_46;
@@ -1737,7 +1731,7 @@ begin
     end if;
   end process;
 
-  process(decode_RegFilePlugin_rs1Data,zz_117,zz_118,decode_INSTRUCTION,zz_119,zz_156,zz_157,zz_120,zz_50,zz_158,memory_BYPASSABLE_MEMORY_STAGE,zz_122,zz_28,zz_159,execute_BYPASSABLE_EXECUTE_STAGE,zz_124,zz_46)
+  process(decode_RegFilePlugin_rs1Data,zz_117,zz_118,decode_INSTRUCTION,zz_119,zz_160,zz_161,zz_120,zz_50,zz_162,memory_BYPASSABLE_MEMORY_STAGE,zz_122,zz_28,zz_163,execute_BYPASSABLE_EXECUTE_STAGE,zz_124,zz_46)
   begin
     decode_RS1 <= decode_RegFilePlugin_rs1Data;
     if zz_117 = '1' then
@@ -1745,21 +1739,21 @@ begin
         decode_RS1 <= zz_119;
       end if;
     end if;
-    if zz_156 = '1' then
-      if zz_157 = '1' then
+    if zz_160 = '1' then
+      if zz_161 = '1' then
         if zz_120 = '1' then
           decode_RS1 <= zz_50;
         end if;
       end if;
     end if;
-    if zz_158 = '1' then
+    if zz_162 = '1' then
       if memory_BYPASSABLE_MEMORY_STAGE = '1' then
         if zz_122 = '1' then
           decode_RS1 <= zz_28;
         end if;
       end if;
     end if;
-    if zz_159 = '1' then
+    if zz_163 = '1' then
       if execute_BYPASSABLE_EXECUTE_STAGE = '1' then
         if zz_124 = '1' then
           decode_RS1 <= zz_46;
@@ -1791,8 +1785,8 @@ begin
   zz_31 <= execute_PC;
   execute_SRC2_CTRL <= zz_32;
   execute_SRC1_CTRL <= zz_33;
-  decode_SRC_USE_SUB_LESS <= pkg_extract(pkg_extract(zz_94,9,9),0);
-  decode_SRC_ADD_ZERO <= pkg_extract(pkg_extract(zz_94,2,2),0);
+  decode_SRC_USE_SUB_LESS <= pkg_extract(pkg_extract(zz_94,22,22),0);
+  decode_SRC_ADD_ZERO <= pkg_extract(pkg_extract(zz_94,4,4),0);
   execute_SRC_ADD_SUB <= execute_SrcPlugin_addSub;
   execute_SRC_LESS <= execute_SrcPlugin_less;
   execute_ALU_CTRL <= zz_34;
@@ -1811,16 +1805,16 @@ begin
   decode_INSTRUCTION_ANTICIPATED <= pkg_mux(decode_arbitration_isStuck,decode_INSTRUCTION,IBusSimplePlugin_iBusRsp_output_payload_rsp_inst);
   process(zz_94,decode_INSTRUCTION)
   begin
-    decode_REGFILE_WRITE_VALID <= pkg_extract(pkg_extract(zz_94,6,6),0);
+    decode_REGFILE_WRITE_VALID <= pkg_extract(pkg_extract(zz_94,16,16),0);
     if pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,11,7) = pkg_stdLogicVector("00000")) = '1' then
       decode_REGFILE_WRITE_VALID <= pkg_toStdLogic(false);
     end if;
   end process;
 
-  process(execute_REGFILE_WRITE_DATA,zz_160,execute_CsrPlugin_readData)
+  process(execute_REGFILE_WRITE_DATA,zz_164,execute_CsrPlugin_readData)
   begin
     zz_46 <= execute_REGFILE_WRITE_DATA;
-    if zz_160 = '1' then
+    if zz_164 = '1' then
       zz_46 <= execute_CsrPlugin_readData;
     end if;
   end process;
@@ -1853,7 +1847,7 @@ begin
   execute_INSTRUCTION <= decode_to_execute_INSTRUCTION;
   execute_MEMORY_STORE <= decode_to_execute_MEMORY_STORE;
   execute_MEMORY_ENABLE <= decode_to_execute_MEMORY_ENABLE;
-  execute_ALIGNEMENT_FAULT <= ((pkg_toStdLogic(zz_153 = pkg_unsigned("10")) and pkg_toStdLogic(pkg_extract(zz_152,1,0) /= pkg_unsigned("00"))) or (pkg_toStdLogic(zz_153 = pkg_unsigned("01")) and pkg_toStdLogic(pkg_extract(zz_152,0,0) /= pkg_unsigned("0"))));
+  execute_ALIGNEMENT_FAULT <= ((pkg_toStdLogic(zz_157 = pkg_unsigned("10")) and pkg_toStdLogic(pkg_extract(zz_156,1,0) /= pkg_unsigned("00"))) or (pkg_toStdLogic(zz_157 = pkg_unsigned("01")) and pkg_toStdLogic(pkg_extract(zz_156,0,0) /= pkg_unsigned("0"))));
   decode_BRANCH_CTRL <= zz_51;
   process(memory_FORMAL_PC_NEXT,BranchPlugin_jumpInterface_valid,BranchPlugin_jumpInterface_payload)
   begin
@@ -1920,23 +1914,23 @@ begin
     end if;
   end process;
 
-  process(execute_arbitration_isValid,execute_MEMORY_ENABLE,dBus_cmd_ready,execute_DBusSimplePlugin_skipCmd,zz_84,zz_160,execute_CsrPlugin_blockedBySideEffects)
+  process(execute_arbitration_isValid,execute_MEMORY_ENABLE,dBus_cmd_ready,execute_DBusSimplePlugin_skipCmd,zz_84,zz_164,execute_CsrPlugin_blockedBySideEffects)
   begin
     execute_arbitration_haltItself <= pkg_toStdLogic(false);
     if ((((execute_arbitration_isValid and execute_MEMORY_ENABLE) and (not dBus_cmd_ready)) and (not execute_DBusSimplePlugin_skipCmd)) and (not zz_84)) = '1' then
       execute_arbitration_haltItself <= pkg_toStdLogic(true);
     end if;
-    if zz_160 = '1' then
+    if zz_164 = '1' then
       if execute_CsrPlugin_blockedBySideEffects = '1' then
         execute_arbitration_haltItself <= pkg_toStdLogic(true);
       end if;
     end if;
   end process;
 
-  process(zz_161)
+  process(zz_165)
   begin
     execute_arbitration_haltByOther <= pkg_toStdLogic(false);
-    if zz_161 = '1' then
+    if zz_165 = '1' then
       execute_arbitration_haltByOther <= pkg_toStdLogic(true);
     end if;
   end process;
@@ -1949,21 +1943,21 @@ begin
     end if;
   end process;
 
-  process(zz_161,zz_162)
+  process(zz_165,zz_166)
   begin
     execute_arbitration_flushIt <= pkg_toStdLogic(false);
-    if zz_161 = '1' then
-      if zz_162 = '1' then
+    if zz_165 = '1' then
+      if zz_166 = '1' then
         execute_arbitration_flushIt <= pkg_toStdLogic(true);
       end if;
     end if;
   end process;
 
-  process(zz_161,zz_162)
+  process(zz_165,zz_166)
   begin
     execute_arbitration_flushNext <= pkg_toStdLogic(false);
-    if zz_161 = '1' then
-      if zz_162 = '1' then
+    if zz_165 = '1' then
+      if zz_166 = '1' then
         execute_arbitration_flushNext <= pkg_toStdLogic(true);
       end if;
     end if;
@@ -2012,13 +2006,13 @@ begin
   end process;
 
   writeBack_arbitration_flushIt <= pkg_toStdLogic(false);
-  process(zz_163,zz_164)
+  process(zz_167,zz_168)
   begin
     writeBack_arbitration_flushNext <= pkg_toStdLogic(false);
-    if zz_163 = '1' then
+    if zz_167 = '1' then
       writeBack_arbitration_flushNext <= pkg_toStdLogic(true);
     end if;
-    if zz_164 = '1' then
+    if zz_168 = '1' then
       writeBack_arbitration_flushNext <= pkg_toStdLogic(true);
     end if;
   end process;
@@ -2027,27 +2021,27 @@ begin
   lastStagePc <= writeBack_PC;
   lastStageIsValid <= writeBack_arbitration_isValid;
   lastStageIsFiring <= writeBack_arbitration_isFiring;
-  process(CsrPlugin_exceptionPortCtrl_exceptionValids_writeBack,CsrPlugin_exceptionPortCtrl_exceptionValids_memory,CsrPlugin_exceptionPortCtrl_exceptionValids_execute,CsrPlugin_exceptionPortCtrl_exceptionValids_decode,zz_163,zz_164,zz_161,zz_162,DebugPlugin_haltIt,zz_165)
+  process(CsrPlugin_exceptionPortCtrl_exceptionValids_writeBack,CsrPlugin_exceptionPortCtrl_exceptionValids_memory,CsrPlugin_exceptionPortCtrl_exceptionValids_execute,CsrPlugin_exceptionPortCtrl_exceptionValids_decode,zz_167,zz_168,zz_165,zz_166,DebugPlugin_haltIt,zz_169)
   begin
     IBusSimplePlugin_fetcherHalt <= pkg_toStdLogic(false);
     if pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(CsrPlugin_exceptionPortCtrl_exceptionValids_writeBack),pkg_cat(pkg_toStdLogicVector(CsrPlugin_exceptionPortCtrl_exceptionValids_memory),pkg_cat(pkg_toStdLogicVector(CsrPlugin_exceptionPortCtrl_exceptionValids_execute),pkg_toStdLogicVector(CsrPlugin_exceptionPortCtrl_exceptionValids_decode)))) /= pkg_stdLogicVector("0000")) = '1' then
       IBusSimplePlugin_fetcherHalt <= pkg_toStdLogic(true);
     end if;
-    if zz_163 = '1' then
+    if zz_167 = '1' then
       IBusSimplePlugin_fetcherHalt <= pkg_toStdLogic(true);
     end if;
-    if zz_164 = '1' then
+    if zz_168 = '1' then
       IBusSimplePlugin_fetcherHalt <= pkg_toStdLogic(true);
     end if;
-    if zz_161 = '1' then
-      if zz_162 = '1' then
+    if zz_165 = '1' then
+      if zz_166 = '1' then
         IBusSimplePlugin_fetcherHalt <= pkg_toStdLogic(true);
       end if;
     end if;
     if DebugPlugin_haltIt = '1' then
       IBusSimplePlugin_fetcherHalt <= pkg_toStdLogic(true);
     end if;
-    if zz_165 = '1' then
+    if zz_169 = '1' then
       IBusSimplePlugin_fetcherHalt <= pkg_toStdLogic(true);
     end if;
   end process;
@@ -2072,25 +2066,25 @@ begin
     end if;
   end process;
 
-  process(zz_163,zz_164)
+  process(zz_167,zz_168)
   begin
     CsrPlugin_jumpInterface_valid <= pkg_toStdLogic(false);
-    if zz_163 = '1' then
+    if zz_167 = '1' then
       CsrPlugin_jumpInterface_valid <= pkg_toStdLogic(true);
     end if;
-    if zz_164 = '1' then
+    if zz_168 = '1' then
       CsrPlugin_jumpInterface_valid <= pkg_toStdLogic(true);
     end if;
   end process;
 
-  process(zz_163,CsrPlugin_xtvec_base,zz_164,zz_166,CsrPlugin_mepc)
+  process(zz_167,CsrPlugin_xtvec_base,zz_168,zz_170,CsrPlugin_mepc)
   begin
     CsrPlugin_jumpInterface_payload <= pkg_unsigned("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-    if zz_163 = '1' then
+    if zz_167 = '1' then
       CsrPlugin_jumpInterface_payload <= unsigned(pkg_cat(std_logic_vector(CsrPlugin_xtvec_base),std_logic_vector(pkg_unsigned("00"))));
     end if;
-    if zz_164 = '1' then
-      case zz_166 is
+    if zz_168 = '1' then
+      case zz_170 is
         when "11" =>
           CsrPlugin_jumpInterface_payload <= CsrPlugin_mepc;
         when others =>
@@ -2128,7 +2122,7 @@ begin
   zz_55 <= std_logic_vector((zz_54 and pkg_not((zz_54 - pkg_unsigned("001")))));
   zz_56 <= pkg_extract(zz_55,1);
   zz_57 <= pkg_extract(zz_55,2);
-  IBusSimplePlugin_jump_pcLoad_payload <= zz_155;
+  IBusSimplePlugin_jump_pcLoad_payload <= zz_159;
   process(IBusSimplePlugin_jump_pcLoad_valid)
   begin
     IBusSimplePlugin_fetchPc_correction <= pkg_toStdLogic(false);
@@ -2362,7 +2356,7 @@ begin
     zz_82(0) <= zz_81;
   end process;
 
-  IBusSimplePlugin_predictionJumpInterface_payload <= (decode_PC + unsigned(pkg_mux(pkg_toStdLogic(decode_BRANCH_CTRL = BranchCtrlEnum_defaultEncoding_JAL),pkg_cat(pkg_cat(zz_80,pkg_cat(pkg_cat(pkg_cat(zz_183,zz_184),pkg_toStdLogicVector(zz_185)),pkg_extract(decode_INSTRUCTION,30,21))),pkg_toStdLogicVector(pkg_toStdLogic(false))),pkg_cat(pkg_cat(zz_82,pkg_cat(pkg_cat(pkg_cat(zz_186,zz_187),pkg_extract(decode_INSTRUCTION,30,25)),pkg_extract(decode_INSTRUCTION,11,8))),pkg_toStdLogicVector(pkg_toStdLogic(false))))));
+  IBusSimplePlugin_predictionJumpInterface_payload <= (decode_PC + unsigned(pkg_mux(pkg_toStdLogic(decode_BRANCH_CTRL = BranchCtrlEnum_defaultEncoding_JAL),pkg_cat(pkg_cat(zz_80,pkg_cat(pkg_cat(pkg_cat(zz_187,zz_188),pkg_toStdLogicVector(zz_189)),pkg_extract(decode_INSTRUCTION,30,21))),pkg_toStdLogicVector(pkg_toStdLogic(false))),pkg_cat(pkg_cat(zz_82,pkg_cat(pkg_cat(pkg_cat(zz_190,zz_191),pkg_extract(decode_INSTRUCTION,30,25)),pkg_extract(decode_INSTRUCTION,11,8))),pkg_toStdLogicVector(pkg_toStdLogic(false))))));
   iBus_cmd_valid <= IBusSimplePlugin_cmd_valid;
   IBusSimplePlugin_cmd_ready <= iBus_cmd_ready;
   iBus_cmd_payload_pc <= IBusSimplePlugin_cmd_payload_pc;
@@ -2375,8 +2369,8 @@ begin
   IBusSimplePlugin_rspJoin_rspBuffer_output_valid <= (IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_valid and pkg_toStdLogic(IBusSimplePlugin_rspJoin_rspBuffer_discardCounter = pkg_unsigned("000")));
   IBusSimplePlugin_rspJoin_rspBuffer_output_payload_error <= IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_payload_error;
   IBusSimplePlugin_rspJoin_rspBuffer_output_payload_inst <= IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_payload_inst;
-  zz_148 <= (IBusSimplePlugin_rspJoin_rspBuffer_output_ready or IBusSimplePlugin_rspJoin_rspBuffer_flush);
-  IBusSimplePlugin_pending_dec <= (IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_valid and zz_148);
+  zz_152 <= (IBusSimplePlugin_rspJoin_rspBuffer_output_ready or IBusSimplePlugin_rspJoin_rspBuffer_flush);
+  IBusSimplePlugin_pending_dec <= (IBusSimplePlugin_rspJoin_rspBuffer_c_io_pop_valid and zz_152);
   IBusSimplePlugin_rspJoin_fetchRsp_pc <= IBusSimplePlugin_iBusRsp_stages_2_output_payload;
   process(IBusSimplePlugin_rspJoin_rspBuffer_output_payload_error,IBusSimplePlugin_rspJoin_rspBuffer_output_valid)
   begin
@@ -2413,10 +2407,10 @@ begin
 
   dBus_cmd_valid <= (((((execute_arbitration_isValid and execute_MEMORY_ENABLE) and (not execute_arbitration_isStuckByOthers)) and (not execute_arbitration_isFlushed)) and (not execute_DBusSimplePlugin_skipCmd)) and (not zz_84));
   dBus_cmd_payload_wr <= execute_MEMORY_STORE;
-  zz_153 <= unsigned(pkg_extract(execute_INSTRUCTION,13,12));
-  process(zz_153,execute_RS2)
+  zz_157 <= unsigned(pkg_extract(execute_INSTRUCTION,13,12));
+  process(zz_157,execute_RS2)
   begin
-    case zz_153 is
+    case zz_157 is
       when "00" =>
         zz_85 <= pkg_cat(pkg_cat(pkg_cat(pkg_extract(execute_RS2,7,0),pkg_extract(execute_RS2,7,0)),pkg_extract(execute_RS2,7,0)),pkg_extract(execute_RS2,7,0));
       when "01" =>
@@ -2427,9 +2421,9 @@ begin
   end process;
 
   dBus_cmd_payload_data <= zz_85;
-  process(zz_153)
+  process(zz_157)
   begin
-    case zz_153 is
+    case zz_157 is
       when "00" =>
         zz_86 <= pkg_stdLogicVector("0001");
       when "01" =>
@@ -2439,8 +2433,8 @@ begin
     end case;
   end process;
 
-  execute_DBusSimplePlugin_formalMask <= std_logic_vector(shift_left(unsigned(zz_86),to_integer(pkg_extract(zz_152,1,0))));
-  zz_152 <= unsigned(execute_SRC_ADD);
+  execute_DBusSimplePlugin_formalMask <= std_logic_vector(shift_left(unsigned(zz_86),to_integer(pkg_extract(zz_156,1,0))));
+  zz_156 <= unsigned(execute_SRC_ADD);
   process(memory_ALIGNEMENT_FAULT,memory_arbitration_isValid,memory_MEMORY_ENABLE,memory_arbitration_isStuckByOthers)
   begin
     DBusSimplePlugin_memoryExceptionPort_valid <= pkg_toStdLogic(false);
@@ -2527,9 +2521,9 @@ begin
     zz_90(15 downto 0) <= pkg_extract(writeBack_DBusSimplePlugin_rspShifted,15,0);
   end process;
 
-  process(zz_178,zz_88,zz_90,writeBack_DBusSimplePlugin_rspShifted)
+  process(zz_182,zz_88,zz_90,writeBack_DBusSimplePlugin_rspShifted)
   begin
-    case zz_178 is
+    case zz_182 is
       when "00" =>
         writeBack_DBusSimplePlugin_rspFormated <= zz_88;
       when "01" =>
@@ -2636,7 +2630,7 @@ begin
 
   contextSwitching <= CsrPlugin_jumpInterface_valid;
   execute_CsrPlugin_blockedBySideEffects <= pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_isValid),pkg_toStdLogicVector(memory_arbitration_isValid)) /= pkg_stdLogicVector("00"));
-  process(execute_CsrPlugin_csr_768,execute_CsrPlugin_csr_836,execute_CsrPlugin_csr_772,execute_CsrPlugin_csr_834,execute_CSR_READ_OPCODE,CsrPlugin_privilege,execute_CsrPlugin_csrAddress,execute_arbitration_isValid,execute_IS_CSR)
+  process(execute_CsrPlugin_csr_768,execute_CsrPlugin_csr_836,execute_CsrPlugin_csr_772,execute_CsrPlugin_csr_833,execute_CsrPlugin_csr_834,execute_CSR_READ_OPCODE,execute_CsrPlugin_csr_835,execute_CsrPlugin_csr_3072,execute_CsrPlugin_csr_3200,CsrPlugin_privilege,execute_CsrPlugin_csrAddress,execute_arbitration_isValid,execute_IS_CSR)
   begin
     execute_CsrPlugin_illegalAccess <= pkg_toStdLogic(true);
     if execute_CsrPlugin_csr_768 = '1' then
@@ -2648,7 +2642,25 @@ begin
     if execute_CsrPlugin_csr_772 = '1' then
       execute_CsrPlugin_illegalAccess <= pkg_toStdLogic(false);
     end if;
+    if execute_CsrPlugin_csr_833 = '1' then
+      execute_CsrPlugin_illegalAccess <= pkg_toStdLogic(false);
+    end if;
     if execute_CsrPlugin_csr_834 = '1' then
+      if execute_CSR_READ_OPCODE = '1' then
+        execute_CsrPlugin_illegalAccess <= pkg_toStdLogic(false);
+      end if;
+    end if;
+    if execute_CsrPlugin_csr_835 = '1' then
+      if execute_CSR_READ_OPCODE = '1' then
+        execute_CsrPlugin_illegalAccess <= pkg_toStdLogic(false);
+      end if;
+    end if;
+    if execute_CsrPlugin_csr_3072 = '1' then
+      if execute_CSR_READ_OPCODE = '1' then
+        execute_CsrPlugin_illegalAccess <= pkg_toStdLogic(false);
+      end if;
+    end if;
+    if execute_CsrPlugin_csr_3200 = '1' then
       if execute_CSR_READ_OPCODE = '1' then
         execute_CsrPlugin_illegalAccess <= pkg_toStdLogic(false);
       end if;
@@ -2676,9 +2688,9 @@ begin
   execute_CsrPlugin_writeEnable <= ((execute_CsrPlugin_writeInstruction and (not execute_CsrPlugin_blockedBySideEffects)) and (not execute_arbitration_isStuckByOthers));
   execute_CsrPlugin_readEnable <= ((execute_CsrPlugin_readInstruction and (not execute_CsrPlugin_blockedBySideEffects)) and (not execute_arbitration_isStuckByOthers));
   execute_CsrPlugin_readToWriteData <= execute_CsrPlugin_readData;
-  process(zz_179,execute_SRC1,execute_INSTRUCTION,execute_CsrPlugin_readToWriteData)
+  process(zz_183,execute_SRC1,execute_INSTRUCTION,execute_CsrPlugin_readToWriteData)
   begin
-    case zz_179 is
+    case zz_183 is
       when '0' =>
         execute_CsrPlugin_writeData <= execute_SRC1;
       when others =>
@@ -2687,28 +2699,28 @@ begin
   end process;
 
   execute_CsrPlugin_csrAddress <= pkg_extract(execute_INSTRUCTION,31,20);
-  zz_95 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000100000001010000")) = pkg_stdLogicVector("00000000000000000100000001010000"));
-  zz_96 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001001000")) = pkg_stdLogicVector("00000000000000000000000001001000"));
-  zz_97 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000000100")) = pkg_stdLogicVector("00000000000000000000000000000100"));
-  zz_94 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_97),pkg_cat(pkg_toStdLogicVector(zz_188),pkg_toStdLogicVector(zz_189))) /= pkg_stdLogicVector("000"))),pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_190 = zz_191)) /= pkg_stdLogicVector("0"))),pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_192,zz_193) /= pkg_stdLogicVector("000"))),pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_194 /= zz_195)),pkg_cat(pkg_toStdLogicVector(zz_196),pkg_cat(zz_197,zz_198))))));
-  zz_98 <= pkg_extract(zz_94,4,3);
+  zz_95 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000000000100")) = pkg_stdLogicVector("00000000000000000000000000000100"));
+  zz_96 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000100000001010000")) = pkg_stdLogicVector("00000000000000000100000001010000"));
+  zz_97 <= pkg_toStdLogic((decode_INSTRUCTION and pkg_stdLogicVector("00000000000000000000000001001000")) = pkg_stdLogicVector("00000000000000000000000001001000"));
+  zz_94 <= pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(zz_97),pkg_toStdLogicVector(pkg_toStdLogic(zz_192 = zz_193))) /= pkg_stdLogicVector("00"))),pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(pkg_toStdLogicVector(pkg_toStdLogic(zz_194 = zz_195)) /= pkg_stdLogicVector("0"))),pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(pkg_cat(zz_196,zz_197) /= pkg_stdLogicVector("00"))),pkg_cat(pkg_toStdLogicVector(pkg_toStdLogic(zz_198 /= zz_199)),pkg_cat(pkg_toStdLogicVector(zz_200),pkg_cat(zz_201,zz_202))))));
+  zz_98 <= pkg_extract(zz_94,3,2);
   zz_45 <= zz_98;
-  zz_99 <= pkg_extract(zz_94,5,5);
+  zz_99 <= pkg_extract(zz_94,7,6);
   zz_44 <= zz_99;
-  zz_100 <= pkg_extract(zz_94,8,7);
+  zz_100 <= pkg_extract(zz_94,10,9);
   zz_43 <= zz_100;
-  zz_101 <= pkg_extract(zz_94,13,12);
+  zz_101 <= pkg_extract(zz_94,12,11);
   zz_42 <= zz_101;
-  zz_102 <= pkg_extract(zz_94,16,15);
+  zz_102 <= pkg_extract(zz_94,14,14);
   zz_41 <= zz_102;
-  zz_103 <= pkg_extract(zz_94,19,18);
+  zz_103 <= pkg_extract(zz_94,21,20);
   zz_40 <= zz_103;
-  zz_104 <= pkg_extract(zz_94,22,21);
+  zz_104 <= pkg_extract(zz_94,25,24);
   zz_39 <= zz_104;
   decode_RegFilePlugin_regFileReadAddress1 <= unsigned(pkg_extract(decode_INSTRUCTION_ANTICIPATED,19,15));
   decode_RegFilePlugin_regFileReadAddress2 <= unsigned(pkg_extract(decode_INSTRUCTION_ANTICIPATED,24,20));
-  decode_RegFilePlugin_rs1Data <= zz_150;
-  decode_RegFilePlugin_rs2Data <= zz_151;
+  decode_RegFilePlugin_rs1Data <= zz_154;
+  decode_RegFilePlugin_rs2Data <= zz_155;
   process(zz_37,writeBack_arbitration_isFiring,zz_105)
   begin
     lastStageRegFileWrite_valid <= (zz_37 and writeBack_arbitration_isFiring);
@@ -2904,25 +2916,25 @@ begin
     zz_114(31) <= pkg_extract(memory_SHIFT_RIGHT,0);
   end process;
 
-  process(zz_167,zz_168,zz_120,zz_169,zz_170,zz_122,zz_171,zz_172,zz_124,decode_RS1_USE)
+  process(zz_171,zz_172,zz_120,zz_173,zz_174,zz_122,zz_175,zz_176,zz_124,decode_RS1_USE)
   begin
     zz_115 <= pkg_toStdLogic(false);
-    if zz_167 = '1' then
-      if zz_168 = '1' then
+    if zz_171 = '1' then
+      if zz_172 = '1' then
         if zz_120 = '1' then
           zz_115 <= pkg_toStdLogic(true);
         end if;
       end if;
     end if;
-    if zz_169 = '1' then
-      if zz_170 = '1' then
+    if zz_173 = '1' then
+      if zz_174 = '1' then
         if zz_122 = '1' then
           zz_115 <= pkg_toStdLogic(true);
         end if;
       end if;
     end if;
-    if zz_171 = '1' then
-      if zz_172 = '1' then
+    if zz_175 = '1' then
+      if zz_176 = '1' then
         if zz_124 = '1' then
           zz_115 <= pkg_toStdLogic(true);
         end if;
@@ -2933,25 +2945,25 @@ begin
     end if;
   end process;
 
-  process(zz_167,zz_168,zz_121,zz_169,zz_170,zz_123,zz_171,zz_172,zz_125,decode_RS2_USE)
+  process(zz_171,zz_172,zz_121,zz_173,zz_174,zz_123,zz_175,zz_176,zz_125,decode_RS2_USE)
   begin
     zz_116 <= pkg_toStdLogic(false);
-    if zz_167 = '1' then
-      if zz_168 = '1' then
+    if zz_171 = '1' then
+      if zz_172 = '1' then
         if zz_121 = '1' then
           zz_116 <= pkg_toStdLogic(true);
         end if;
       end if;
     end if;
-    if zz_169 = '1' then
-      if zz_170 = '1' then
+    if zz_173 = '1' then
+      if zz_174 = '1' then
         if zz_123 = '1' then
           zz_116 <= pkg_toStdLogic(true);
         end if;
       end if;
     end if;
-    if zz_171 = '1' then
-      if zz_172 = '1' then
+    if zz_175 = '1' then
+      if zz_176 = '1' then
         if zz_125 = '1' then
           zz_116 <= pkg_toStdLogic(true);
         end if;
@@ -3110,13 +3122,13 @@ begin
     zz_137(0) <= zz_136;
   end process;
 
-  process(execute_BRANCH_CTRL,zz_137,execute_INSTRUCTION,zz_139,zz_311,zz_312,zz_313,zz_141,zz_314,zz_315,execute_PREDICTION_HAD_BRANCHED2)
+  process(execute_BRANCH_CTRL,zz_137,execute_INSTRUCTION,zz_139,zz_308,zz_309,zz_310,zz_141,zz_311,zz_312,execute_PREDICTION_HAD_BRANCHED2)
   begin
     case execute_BRANCH_CTRL is
       when BranchCtrlEnum_defaultEncoding_JALR =>
         execute_BranchPlugin_branch_src2 <= unsigned(pkg_cat(zz_137,pkg_extract(execute_INSTRUCTION,31,20)));
       when others =>
-        execute_BranchPlugin_branch_src2 <= unsigned(pkg_mux(pkg_toStdLogic(execute_BRANCH_CTRL = BranchCtrlEnum_defaultEncoding_JAL),pkg_cat(pkg_cat(zz_139,pkg_cat(pkg_cat(pkg_cat(zz_311,zz_312),pkg_toStdLogicVector(zz_313)),pkg_extract(execute_INSTRUCTION,30,21))),pkg_toStdLogicVector(pkg_toStdLogic(false))),pkg_cat(pkg_cat(zz_141,pkg_cat(pkg_cat(pkg_cat(zz_314,zz_315),pkg_extract(execute_INSTRUCTION,30,25)),pkg_extract(execute_INSTRUCTION,11,8))),pkg_toStdLogicVector(pkg_toStdLogic(false)))));
+        execute_BranchPlugin_branch_src2 <= unsigned(pkg_mux(pkg_toStdLogic(execute_BRANCH_CTRL = BranchCtrlEnum_defaultEncoding_JAL),pkg_cat(pkg_cat(zz_139,pkg_cat(pkg_cat(pkg_cat(zz_308,zz_309),pkg_toStdLogicVector(zz_310)),pkg_extract(execute_INSTRUCTION,30,21))),pkg_toStdLogicVector(pkg_toStdLogic(false))),pkg_cat(pkg_cat(zz_141,pkg_cat(pkg_cat(pkg_cat(zz_311,zz_312),pkg_extract(execute_INSTRUCTION,30,25)),pkg_extract(execute_INSTRUCTION,11,8))),pkg_toStdLogicVector(pkg_toStdLogic(false)))));
         if execute_PREDICTION_HAD_BRANCHED2 = '1' then
           execute_BranchPlugin_branch_src2 <= pkg_resize(unsigned(pkg_stdLogicVector("100")),32);
         end if;
@@ -3167,15 +3179,15 @@ begin
   BranchPlugin_jumpInterface_valid <= ((memory_arbitration_isValid and memory_BRANCH_DO) and (not pkg_toStdLogic(false)));
   BranchPlugin_jumpInterface_payload <= memory_BRANCH_CALC;
   IBusSimplePlugin_decodePrediction_rsp_wasWrong <= BranchPlugin_jumpInterface_valid;
-  process(debug_bus_cmd_valid,zz_173,debug_bus_cmd_payload_wr,IBusSimplePlugin_injectionPort_ready)
+  process(debug_bus_cmd_valid,zz_177,debug_bus_cmd_payload_wr,IBusSimplePlugin_injectionPort_ready)
   begin
-    zz_154 <= pkg_toStdLogic(true);
+    zz_158 <= pkg_toStdLogic(true);
     if debug_bus_cmd_valid = '1' then
-      case zz_173 is
+      case zz_177 is
         when "000000" =>
         when "000001" =>
           if debug_bus_cmd_payload_wr = '1' then
-            zz_154 <= IBusSimplePlugin_injectionPort_ready;
+            zz_158 <= IBusSimplePlugin_injectionPort_ready;
           end if;
         when others =>
       end case;
@@ -3194,11 +3206,11 @@ begin
     end if;
   end process;
 
-  process(debug_bus_cmd_valid,zz_173,debug_bus_cmd_payload_wr)
+  process(debug_bus_cmd_valid,zz_177,debug_bus_cmd_payload_wr)
   begin
     IBusSimplePlugin_injectionPort_valid <= pkg_toStdLogic(false);
     if debug_bus_cmd_valid = '1' then
-      case zz_173 is
+      case zz_177 is
         when "000000" =>
         when "000001" =>
           if debug_bus_cmd_payload_wr = '1' then
@@ -3211,33 +3223,33 @@ begin
 
   IBusSimplePlugin_injectionPort_payload <= debug_bus_cmd_payload_data;
   debug_resetOut <= DebugPlugin_resetIt_regNext;
-  zz_26 <= decode_SRC1_CTRL;
-  zz_24 <= zz_45;
-  zz_33 <= decode_to_execute_SRC1_CTRL;
-  zz_23 <= decode_ALU_CTRL;
-  zz_21 <= zz_43;
-  zz_34 <= decode_to_execute_ALU_CTRL;
-  zz_20 <= decode_SRC2_CTRL;
-  zz_18 <= zz_42;
-  zz_32 <= decode_to_execute_SRC2_CTRL;
-  zz_17 <= decode_ENV_CTRL;
-  zz_14 <= execute_ENV_CTRL;
-  zz_12 <= memory_ENV_CTRL;
-  zz_15 <= zz_44;
+  zz_26 <= decode_ENV_CTRL;
+  zz_23 <= execute_ENV_CTRL;
+  zz_21 <= memory_ENV_CTRL;
+  zz_24 <= zz_41;
   zz_48 <= decode_to_execute_ENV_CTRL;
   zz_47 <= execute_to_memory_ENV_CTRL;
   zz_49 <= memory_to_writeBack_ENV_CTRL;
-  zz_10 <= decode_ALU_BITWISE_CTRL;
-  zz_8 <= zz_39;
+  zz_19 <= decode_SRC1_CTRL;
+  zz_17 <= zz_43;
+  zz_33 <= decode_to_execute_SRC1_CTRL;
+  zz_16 <= decode_ALU_CTRL;
+  zz_14 <= zz_42;
+  zz_34 <= decode_to_execute_ALU_CTRL;
+  zz_13 <= decode_SRC2_CTRL;
+  zz_11 <= zz_45;
+  zz_32 <= decode_to_execute_SRC2_CTRL;
+  zz_10 <= decode_BRANCH_CTRL;
+  zz_51 <= zz_39;
+  zz_27 <= decode_to_execute_BRANCH_CTRL;
+  zz_8 <= decode_ALU_BITWISE_CTRL;
+  zz_6 <= zz_44;
   zz_35 <= decode_to_execute_ALU_BITWISE_CTRL;
-  zz_7 <= decode_SHIFT_CTRL;
-  zz_4 <= execute_SHIFT_CTRL;
-  zz_5 <= zz_41;
+  zz_5 <= decode_SHIFT_CTRL;
+  zz_2 <= execute_SHIFT_CTRL;
+  zz_3 <= zz_40;
   zz_30 <= decode_to_execute_SHIFT_CTRL;
   zz_29 <= execute_to_memory_SHIFT_CTRL;
-  zz_2 <= decode_BRANCH_CTRL;
-  zz_51 <= zz_40;
-  zz_27 <= decode_to_execute_BRANCH_CTRL;
   decode_arbitration_isFlushed <= (pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_flushNext),pkg_cat(pkg_toStdLogicVector(memory_arbitration_flushNext),pkg_toStdLogicVector(execute_arbitration_flushNext))) /= pkg_stdLogicVector("000")) or pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_flushIt),pkg_cat(pkg_toStdLogicVector(memory_arbitration_flushIt),pkg_cat(pkg_toStdLogicVector(execute_arbitration_flushIt),pkg_toStdLogicVector(decode_arbitration_flushIt)))) /= pkg_stdLogicVector("0000")));
   execute_arbitration_isFlushed <= (pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_flushNext),pkg_toStdLogicVector(memory_arbitration_flushNext)) /= pkg_stdLogicVector("00")) or pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_flushIt),pkg_cat(pkg_toStdLogicVector(memory_arbitration_flushIt),pkg_toStdLogicVector(execute_arbitration_flushIt))) /= pkg_stdLogicVector("000")));
   memory_arbitration_isFlushed <= (pkg_toStdLogic(pkg_toStdLogicVector(writeBack_arbitration_flushNext) /= pkg_stdLogicVector("0")) or pkg_toStdLogic(pkg_cat(pkg_toStdLogicVector(writeBack_arbitration_flushIt),pkg_toStdLogicVector(memory_arbitration_flushIt)) /= pkg_stdLogicVector("00")));
@@ -3302,17 +3314,49 @@ begin
     end if;
   end process;
 
-  process(execute_CsrPlugin_csr_834,CsrPlugin_mcause_interrupt,CsrPlugin_mcause_exceptionCode)
+  process(execute_CsrPlugin_csr_833,CsrPlugin_mepc)
   begin
     zz_147 <= pkg_stdLogicVector("00000000000000000000000000000000");
-    if execute_CsrPlugin_csr_834 = '1' then
-      zz_147(31 downto 31) <= pkg_toStdLogicVector(CsrPlugin_mcause_interrupt);
-      zz_147(3 downto 0) <= std_logic_vector(CsrPlugin_mcause_exceptionCode);
+    if execute_CsrPlugin_csr_833 = '1' then
+      zz_147(31 downto 0) <= std_logic_vector(CsrPlugin_mepc);
     end if;
   end process;
 
-  execute_CsrPlugin_readData <= ((zz_144 or zz_145) or (zz_146 or zz_147));
-  zz_149 <= pkg_toStdLogic(false);
+  process(execute_CsrPlugin_csr_834,CsrPlugin_mcause_interrupt,CsrPlugin_mcause_exceptionCode)
+  begin
+    zz_148 <= pkg_stdLogicVector("00000000000000000000000000000000");
+    if execute_CsrPlugin_csr_834 = '1' then
+      zz_148(31 downto 31) <= pkg_toStdLogicVector(CsrPlugin_mcause_interrupt);
+      zz_148(3 downto 0) <= std_logic_vector(CsrPlugin_mcause_exceptionCode);
+    end if;
+  end process;
+
+  process(execute_CsrPlugin_csr_835,CsrPlugin_mtval)
+  begin
+    zz_149 <= pkg_stdLogicVector("00000000000000000000000000000000");
+    if execute_CsrPlugin_csr_835 = '1' then
+      zz_149(31 downto 0) <= std_logic_vector(CsrPlugin_mtval);
+    end if;
+  end process;
+
+  process(execute_CsrPlugin_csr_3072,CsrPlugin_mcycle)
+  begin
+    zz_150 <= pkg_stdLogicVector("00000000000000000000000000000000");
+    if execute_CsrPlugin_csr_3072 = '1' then
+      zz_150(31 downto 0) <= std_logic_vector(pkg_extract(CsrPlugin_mcycle,31,0));
+    end if;
+  end process;
+
+  process(execute_CsrPlugin_csr_3200,CsrPlugin_mcycle)
+  begin
+    zz_151 <= pkg_stdLogicVector("00000000000000000000000000000000");
+    if execute_CsrPlugin_csr_3200 = '1' then
+      zz_151(31 downto 0) <= std_logic_vector(pkg_extract(CsrPlugin_mcycle,63,32));
+    end if;
+  end process;
+
+  execute_CsrPlugin_readData <= (((zz_144 or zz_145) or (zz_146 or zz_147)) or ((zz_148 or zz_149) or (zz_150 or zz_151)));
+  zz_153 <= pkg_toStdLogic(false);
   process(clk, reset)
   begin
     if reset = '1' then
@@ -3458,14 +3502,14 @@ begin
         CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_writeBack <= pkg_toStdLogic(false);
       end if;
       CsrPlugin_interrupt_valid <= pkg_toStdLogic(false);
-      if zz_174 = '1' then
-        if zz_175 = '1' then
+      if zz_178 = '1' then
+        if zz_179 = '1' then
           CsrPlugin_interrupt_valid <= pkg_toStdLogic(true);
         end if;
-        if zz_176 = '1' then
+        if zz_180 = '1' then
           CsrPlugin_interrupt_valid <= pkg_toStdLogic(true);
         end if;
-        if zz_177 = '1' then
+        if zz_181 = '1' then
           CsrPlugin_interrupt_valid <= pkg_toStdLogic(true);
         end if;
       end if;
@@ -3489,7 +3533,7 @@ begin
         CsrPlugin_interrupt_valid <= pkg_toStdLogic(false);
       end if;
       CsrPlugin_hadException <= CsrPlugin_exception;
-      if zz_163 = '1' then
+      if zz_167 = '1' then
         case CsrPlugin_targetPrivilege is
           when "11" =>
             CsrPlugin_mstatus_MIE <= pkg_toStdLogic(false);
@@ -3498,8 +3542,8 @@ begin
           when others =>
         end case;
       end if;
-      if zz_164 = '1' then
-        case zz_166 is
+      if zz_168 = '1' then
+        case zz_170 is
           when "11" =>
             CsrPlugin_mstatus_MPP <= pkg_unsigned("00");
             CsrPlugin_mstatus_MIE <= CsrPlugin_mstatus_MPIE;
@@ -3596,21 +3640,21 @@ begin
         CsrPlugin_exceptionPortCtrl_exceptionContext_code <= DBusSimplePlugin_memoryExceptionPort_payload_code;
         CsrPlugin_exceptionPortCtrl_exceptionContext_badAddr <= DBusSimplePlugin_memoryExceptionPort_payload_badAddr;
       end if;
-      if zz_174 = '1' then
-        if zz_175 = '1' then
+      if zz_178 = '1' then
+        if zz_179 = '1' then
           CsrPlugin_interrupt_code <= pkg_unsigned("0111");
           CsrPlugin_interrupt_targetPrivilege <= pkg_unsigned("11");
         end if;
-        if zz_176 = '1' then
+        if zz_180 = '1' then
           CsrPlugin_interrupt_code <= pkg_unsigned("0011");
           CsrPlugin_interrupt_targetPrivilege <= pkg_unsigned("11");
         end if;
-        if zz_177 = '1' then
+        if zz_181 = '1' then
           CsrPlugin_interrupt_code <= pkg_unsigned("1011");
           CsrPlugin_interrupt_targetPrivilege <= pkg_unsigned("11");
         end if;
       end if;
-      if zz_163 = '1' then
+      if zz_167 = '1' then
         case CsrPlugin_targetPrivilege is
           when "11" =>
             CsrPlugin_mcause_interrupt <= (not CsrPlugin_hadException);
@@ -3624,125 +3668,20 @@ begin
       end if;
       zz_118 <= pkg_extract(zz_36,11,7);
       zz_119 <= zz_50;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_SRC2_FORCE_ZERO <= decode_SRC2_FORCE_ZERO;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_SRC_LESS_UNSIGNED <= decode_SRC_LESS_UNSIGNED;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_CSR_READ_OPCODE <= decode_CSR_READ_OPCODE;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_SRC1_CTRL <= zz_25;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_ALU_CTRL <= zz_22;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_REGFILE_WRITE_DATA <= zz_46;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_SRC_USE_SUB_LESS <= decode_SRC_USE_SUB_LESS;
-      end if;
-      if (not writeBack_arbitration_isStuck) = '1' then
-        memory_to_writeBack_MEMORY_READ_DATA <= memory_MEMORY_READ_DATA;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_RS1 <= decode_RS1;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_BRANCH_DO <= execute_BRANCH_DO;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_MEMORY_ENABLE <= decode_MEMORY_ENABLE;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_MEMORY_ENABLE <= execute_MEMORY_ENABLE;
-      end if;
-      if (not writeBack_arbitration_isStuck) = '1' then
-        memory_to_writeBack_MEMORY_ENABLE <= memory_MEMORY_ENABLE;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_CSR_WRITE_OPCODE <= decode_CSR_WRITE_OPCODE;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_SRC2_CTRL <= zz_19;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_BYPASSABLE_MEMORY_STAGE <= decode_BYPASSABLE_MEMORY_STAGE;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_BYPASSABLE_MEMORY_STAGE <= execute_BYPASSABLE_MEMORY_STAGE;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_BRANCH_CALC <= execute_BRANCH_CALC;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_FORMAL_PC_NEXT <= zz_53;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_FORMAL_PC_NEXT <= execute_FORMAL_PC_NEXT;
-      end if;
-      if (not writeBack_arbitration_isStuck) = '1' then
-        memory_to_writeBack_FORMAL_PC_NEXT <= zz_52;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_PC <= decode_PC;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_PC <= zz_31;
-      end if;
-      if ((not writeBack_arbitration_isStuck) and (not CsrPlugin_exceptionPortCtrl_exceptionValids_writeBack)) = '1' then
-        memory_to_writeBack_PC <= memory_PC;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_ENV_CTRL <= zz_16;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_ENV_CTRL <= zz_13;
-      end if;
-      if (not writeBack_arbitration_isStuck) = '1' then
-        memory_to_writeBack_ENV_CTRL <= zz_11;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_BYPASSABLE_EXECUTE_STAGE <= decode_BYPASSABLE_EXECUTE_STAGE;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_ALU_BITWISE_CTRL <= zz_9;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_INSTRUCTION <= decode_INSTRUCTION;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_INSTRUCTION <= execute_INSTRUCTION;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_SHIFT_RIGHT <= execute_SHIFT_RIGHT;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_SHIFT_CTRL <= zz_6;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_SHIFT_CTRL <= zz_3;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_IS_CSR <= decode_IS_CSR;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_DO_EBREAK <= decode_DO_EBREAK;
-      end if;
-      if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_PREDICTION_HAD_BRANCHED2 <= decode_PREDICTION_HAD_BRANCHED2;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_ALIGNEMENT_FAULT <= execute_ALIGNEMENT_FAULT;
-      end if;
       if (not memory_arbitration_isStuck) = '1' then
         execute_to_memory_MEMORY_ADDRESS_LOW <= execute_MEMORY_ADDRESS_LOW;
       end if;
       if (not writeBack_arbitration_isStuck) = '1' then
         memory_to_writeBack_MEMORY_ADDRESS_LOW <= memory_MEMORY_ADDRESS_LOW;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_RS1 <= decode_RS1;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_SHIFT_RIGHT <= execute_SHIFT_RIGHT;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_IS_CSR <= decode_IS_CSR;
       end if;
       if (not execute_arbitration_isStuck) = '1' then
         decode_to_execute_MEMORY_STORE <= decode_MEMORY_STORE;
@@ -3754,10 +3693,37 @@ begin
         memory_to_writeBack_MEMORY_STORE <= memory_MEMORY_STORE;
       end if;
       if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_RS2 <= decode_RS2;
+        decode_to_execute_SRC_LESS_UNSIGNED <= decode_SRC_LESS_UNSIGNED;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_REGFILE_WRITE_DATA <= zz_46;
+      end if;
+      if (not writeBack_arbitration_isStuck) = '1' then
+        memory_to_writeBack_MEMORY_READ_DATA <= memory_MEMORY_READ_DATA;
       end if;
       if (not execute_arbitration_isStuck) = '1' then
-        decode_to_execute_BRANCH_CTRL <= zz_1;
+        decode_to_execute_ENV_CTRL <= zz_25;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_ENV_CTRL <= zz_22;
+      end if;
+      if (not writeBack_arbitration_isStuck) = '1' then
+        memory_to_writeBack_ENV_CTRL <= zz_20;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_FORMAL_PC_NEXT <= zz_53;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_FORMAL_PC_NEXT <= execute_FORMAL_PC_NEXT;
+      end if;
+      if (not writeBack_arbitration_isStuck) = '1' then
+        memory_to_writeBack_FORMAL_PC_NEXT <= zz_52;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_SRC1_CTRL <= zz_18;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_RS2 <= decode_RS2;
       end if;
       if (not execute_arbitration_isStuck) = '1' then
         decode_to_execute_REGFILE_WRITE_VALID <= decode_REGFILE_WRITE_VALID;
@@ -3767,6 +3733,84 @@ begin
       end if;
       if (not writeBack_arbitration_isStuck) = '1' then
         memory_to_writeBack_REGFILE_WRITE_VALID <= memory_REGFILE_WRITE_VALID;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_PREDICTION_HAD_BRANCHED2 <= decode_PREDICTION_HAD_BRANCHED2;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_MEMORY_ENABLE <= decode_MEMORY_ENABLE;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_MEMORY_ENABLE <= execute_MEMORY_ENABLE;
+      end if;
+      if (not writeBack_arbitration_isStuck) = '1' then
+        memory_to_writeBack_MEMORY_ENABLE <= memory_MEMORY_ENABLE;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_ALU_CTRL <= zz_15;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_SRC2_FORCE_ZERO <= decode_SRC2_FORCE_ZERO;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_BRANCH_DO <= execute_BRANCH_DO;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_BYPASSABLE_EXECUTE_STAGE <= decode_BYPASSABLE_EXECUTE_STAGE;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_SRC2_CTRL <= zz_12;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_BRANCH_CALC <= execute_BRANCH_CALC;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_SRC_USE_SUB_LESS <= decode_SRC_USE_SUB_LESS;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_INSTRUCTION <= decode_INSTRUCTION;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_INSTRUCTION <= execute_INSTRUCTION;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_DO_EBREAK <= decode_DO_EBREAK;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_BRANCH_CTRL <= zz_9;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_ALU_BITWISE_CTRL <= zz_7;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_BYPASSABLE_MEMORY_STAGE <= decode_BYPASSABLE_MEMORY_STAGE;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_BYPASSABLE_MEMORY_STAGE <= execute_BYPASSABLE_MEMORY_STAGE;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_CSR_WRITE_OPCODE <= decode_CSR_WRITE_OPCODE;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_SHIFT_CTRL <= zz_4;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_SHIFT_CTRL <= zz_1;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_ALIGNEMENT_FAULT <= execute_ALIGNEMENT_FAULT;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_PC <= decode_PC;
+      end if;
+      if (not memory_arbitration_isStuck) = '1' then
+        execute_to_memory_PC <= zz_31;
+      end if;
+      if ((not writeBack_arbitration_isStuck) and (not CsrPlugin_exceptionPortCtrl_exceptionValids_writeBack)) = '1' then
+        memory_to_writeBack_PC <= memory_PC;
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        decode_to_execute_CSR_READ_OPCODE <= decode_CSR_READ_OPCODE;
       end if;
       if pkg_toStdLogic(zz_143 /= pkg_unsigned("000")) = '1' then
         zz_70 <= IBusSimplePlugin_injectionPort_payload;
@@ -3781,11 +3825,28 @@ begin
         execute_CsrPlugin_csr_772 <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,31,20) = pkg_stdLogicVector("001100000100"));
       end if;
       if (not execute_arbitration_isStuck) = '1' then
+        execute_CsrPlugin_csr_833 <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,31,20) = pkg_stdLogicVector("001101000001"));
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
         execute_CsrPlugin_csr_834 <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,31,20) = pkg_stdLogicVector("001101000010"));
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        execute_CsrPlugin_csr_835 <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,31,20) = pkg_stdLogicVector("001101000011"));
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        execute_CsrPlugin_csr_3072 <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,31,20) = pkg_stdLogicVector("110000000000"));
+      end if;
+      if (not execute_arbitration_isStuck) = '1' then
+        execute_CsrPlugin_csr_3200 <= pkg_toStdLogic(pkg_extract(decode_INSTRUCTION,31,20) = pkg_stdLogicVector("110010000000"));
       end if;
       if execute_CsrPlugin_csr_836 = '1' then
         if execute_CsrPlugin_writeEnable = '1' then
           CsrPlugin_mip_MSIP <= pkg_extract(pkg_extract(execute_CsrPlugin_writeData,3,3),0);
+        end if;
+      end if;
+      if execute_CsrPlugin_csr_833 = '1' then
+        if execute_CsrPlugin_writeEnable = '1' then
+          CsrPlugin_mepc <= unsigned(pkg_extract(execute_CsrPlugin_writeData,31,0));
         end if;
       end if;
     end if;
@@ -3795,7 +3856,7 @@ begin
   begin
     if rising_edge(clk) then
       DebugPlugin_firstCycle <= pkg_toStdLogic(false);
-      if zz_154 = '1' then
+      if zz_158 = '1' then
         DebugPlugin_firstCycle <= pkg_toStdLogic(true);
       end if;
       DebugPlugin_secondCycle <= DebugPlugin_firstCycle;
@@ -3804,7 +3865,7 @@ begin
         DebugPlugin_busReadDataReg <= zz_50;
       end if;
       zz_142 <= pkg_extract(debug_bus_cmd_payload_address,2);
-      if zz_161 = '1' then
+      if zz_165 = '1' then
         DebugPlugin_busReadDataReg <= std_logic_vector(execute_PC);
       end if;
       DebugPlugin_resetIt_regNext <= DebugPlugin_resetIt;
@@ -3824,7 +3885,7 @@ begin
         DebugPlugin_godmode <= pkg_toStdLogic(true);
       end if;
       if debug_bus_cmd_valid = '1' then
-        case zz_173 is
+        case zz_177 is
           when "000000" =>
             if debug_bus_cmd_payload_wr = '1' then
               DebugPlugin_stepIt <= pkg_extract(debug_bus_cmd_payload_data,4);
@@ -3851,13 +3912,13 @@ begin
           when others =>
         end case;
       end if;
-      if zz_161 = '1' then
-        if zz_162 = '1' then
+      if zz_165 = '1' then
+        if zz_166 = '1' then
           DebugPlugin_haltIt <= pkg_toStdLogic(true);
           DebugPlugin_haltedByBreak <= pkg_toStdLogic(true);
         end if;
       end if;
-      if zz_165 = '1' then
+      if zz_169 = '1' then
         if decode_arbitration_isValid = '1' then
           DebugPlugin_haltIt <= pkg_toStdLogic(true);
         end if;
