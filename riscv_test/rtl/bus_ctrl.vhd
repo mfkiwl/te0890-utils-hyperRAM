@@ -37,7 +37,7 @@ entity bus_ctrl is
         mst_cmd_valid:  in  std_logic;
         mst_cmd_ready:  out std_logic;
         mst_cmd_addr:   in  rvsys_addr_type;
-        mst_cmd_write:	in  std_logic;
+        mst_cmd_write:  in  std_logic;
         mst_cmd_wdata:  in  std_logic_vector(31 downto 0);
         mst_cmd_wmask:  in  std_logic_vector(3 downto 0);
         mst_rsp_valid:  out std_logic;
@@ -243,7 +243,7 @@ begin
         end loop;
 
         -- Drive new register values to synchronous process.
-        rnext	<= v;
+        rnext <= v;
 
     end process;
 

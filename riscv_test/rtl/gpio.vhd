@@ -112,7 +112,7 @@ begin
         end if;
 
         -- Drive new register values to synchronous process.
-        rnext	<= v;
+        rnext <= v;
 
     end process;
 
