@@ -72,6 +72,7 @@ These steps are for Debian Linux 10 on x86_64:
   License
   -------
 
+The VexRiscv copyright belongs to the SpinalHDL contributors.
 VexRiscv is licensed under the MIT License.
 See the file "LICENSE" for the complete copyright statement.
 
