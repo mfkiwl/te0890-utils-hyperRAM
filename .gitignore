@@ -1,0 +1,3 @@
+riscv_test/sw/*.o
+riscv_test/sw/*.elf
+riscv_test/sw/hello*.hex
