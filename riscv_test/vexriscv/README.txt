@@ -41,22 +41,25 @@ These steps are for Debian Linux 10 on x86_64:
 
  2. Install sbt (Scala build tool):
 
-    Go to https://www.scala-sbt.org/ and download sbt-1.3.13.zip.
+    Go to https://www.scala-sbt.org/ and download sbt-1.4.7.zip.
     Unzip the file in some suitable location:
 
-    $ unzip sbt-1.3.13.zip
+    $ unzip sbt-1.4.7.zip
 
  3. Download VexRiscv:
 
     $ git clone https://github.com/SpinalHDL/VexRiscv.git
 
+    Note: I used VexRiscv commit 36b3cd918896c94c4e8a224d97c559ab6dbf3ec9.
+
  4. Copy the file GenMyCpu.scala to the VexRiscv tree:
 
-    $ cd VexRiscv
-    $ cp {some-path}/riscv_test/vexriscv/GenMyCpu.scala src/main/scala/vexriscv/demo
+    $ cp {some-path}/riscv_test/vexriscv/GenMyCpu.scala \
+         VexRiscv/src/main/scala/vexriscv/demo
 
  5. Compile the SpinalHDL code:
 
+    $ cd VexRiscv
     $ {some-path}/sbt/bin/sbt "runMain vexriscv.demo.GenMyCpu"
 
     When running for the first time, sbt will automatically download
