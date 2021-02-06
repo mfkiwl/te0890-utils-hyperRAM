@@ -40,9 +40,9 @@ The following seems to be working nicely:
  - UART (serial port)
  - GPIO and LEDs
  - running small C programs
+ - remote debugging with GDB
 
 The following is on my TODO list (and may or may not get done at some point):
- - remote debugging with GDB
  - interrupts
  - timer peripheral
  - access to TE0890 flash chip
@@ -77,6 +77,7 @@ the `hexboot` command to load another program:
 >> hexboot
 Reading HEX data ...
 ```
+
 Immediately following the `hexboot` command, the boot monitor expects
 to read an IHEX file through the serial port.
 It loads the file into the RISC-V RAM, overwriting the boot monitor code,
@@ -84,9 +85,19 @@ then starts running the loaded program.
 The last 512 bytes of RAM are reserved for the HEX loading code and
 must not be overwritten by the HEX file.
 
-The `hexboot` command is admittedly a bit inconvenient.
-I hope to get remote debugging with GDB working via the JTAG port.
-Once that works, we can load and run `.elf` files via GDB.
+An easier way to load and run programs is remote debugging with GDB
+via the JTAG port.
+This requires setting up GDB and OpenOCD;
+see [toolchain_notes.md](toolchain_notes.md) for how to do that.
+
+Once OpenOCD is running, start GDB and run a program like this:
+```
+$ riscv-none-elf-gdb
+(gdb) target extended-remote localhost:3333
+(gdb) monitor reset halt
+(gdb) load hello.elf
+(gdb) cont
+```
 
 
 ## Software

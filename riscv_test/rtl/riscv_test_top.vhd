@@ -44,10 +44,15 @@ end entity;
 
 architecture arch_top of riscv_test_top is
 
-    signal clk_main:        std_logic;
-    signal s_mmcm_fb:       std_logic;
-    signal s_mmcm_clkout0:  std_logic;
-    signal s_mmcm_locked:   std_logic;
+    signal clk_main:                std_logic;
+    signal s_mmcm_fb:               std_logic;
+    signal s_mmcm_clkout0:          std_logic;
+    signal s_mmcm_locked:           std_logic;
+
+    signal r_rstn_shift:            std_logic_vector(7 downto 0);
+    signal r_reset:                 std_logic;
+    signal r_sys_rstn_shift:        std_logic_vector(7 downto 0);
+    signal r_sys_reset:             std_logic;
 
     signal s_cpu_ibus_cmd_valid:    std_logic;
     signal s_cpu_ibus_cmd_ready:    std_logic;
@@ -70,7 +75,7 @@ architecture arch_top of riscv_test_top is
     signal s_cpu_dbg_cmd_valid:     std_logic;
     signal s_cpu_dbg_cmd_ready:     std_logic;
     signal s_cpu_dbg_cmd_write:     std_logic;
-    signal s_cpu_dbg_cmd_addr:      unsigned(7 downto 0);
+    signal s_cpu_dbg_cmd_addr:      std_logic_vector(31 downto 0);
     signal s_cpu_dbg_cmd_wdata:     std_logic_vector(31 downto 0);
     signal s_cpu_dbg_rsp_rdata:     std_logic_vector(31 downto 0);
     signal s_cpu_dbg_reset_out:     std_logic;
@@ -93,8 +98,11 @@ architecture arch_top of riscv_test_top is
     signal s_uart_rx:               std_logic;
     signal s_uart_interrupt:        std_logic;
 
-    signal r_reset:         std_logic;
-    signal r_rstn_shift:    std_logic_vector(7 downto 0);
+    signal s_jtag_drck:             std_logic;
+    signal s_jtag_capture:          std_logic;
+    signal s_jtag_shift:            std_logic;
+    signal s_jtag_tdi:              std_logic;
+    signal s_jtag_tdo:              std_logic;
 
 begin
 
@@ -168,6 +176,23 @@ begin
         port map ( I => '0', O => hr_rst_l );
 
     --
+    -- JTAG port.
+    --
+
+    -- Whenever the JTAG instruction register contains USER1,
+    -- the data register will shift through this component.
+    -- On Spartan7, USER1 is the 6-bit value "000010".
+    inst_bscane2: BSCANE2
+        generic map (
+            JTAG_CHAIN => 1 )  -- Value for USER command.
+        port map (
+            CAPTURE     => s_jtag_capture,
+            DRCK        => s_jtag_drck,
+            SHIFT       => s_jtag_shift,
+            TDI         => s_jtag_tdi,
+            TDO         => s_jtag_tdo );
+
+    --
     -- VexRiscv
     --
 
@@ -185,7 +210,7 @@ begin
             debug_bus_cmd_valid           => s_cpu_dbg_cmd_valid,
             debug_bus_cmd_ready           => s_cpu_dbg_cmd_ready,
             debug_bus_cmd_payload_wr      => s_cpu_dbg_cmd_write,
-            debug_bus_cmd_payload_address => s_cpu_dbg_cmd_addr,
+            debug_bus_cmd_payload_address => unsigned(s_cpu_dbg_cmd_addr(7 downto 0)),
             debug_bus_cmd_payload_data    => s_cpu_dbg_cmd_wdata,
             debug_bus_rsp_data            => s_cpu_dbg_rsp_rdata,
             debug_resetOut          => s_cpu_dbg_reset_out,
@@ -199,15 +224,12 @@ begin
             dBus_rsp_error          => s_cpu_dbus_rsp_error,
             dBus_rsp_data           => s_cpu_dbus_rsp_rdata,
             clk                     => clk_main,
-            reset                   => r_reset,
+            reset                   => r_sys_reset,
             debugReset              => r_reset );
 
     -- Instruction bus and data bus never raise error flag.
     s_cpu_ibus_rsp_error <= '0';
     s_cpu_dbus_rsp_error <= '0';
-
-    -- Debugging not yet supported.
-    s_cpu_dbg_cmd_valid <= '0';
 
     --
     -- On-chip RAM
@@ -266,7 +288,7 @@ begin
             pipeline_rsp  => false )
         port map (
             clk           => clk_main,
-            rst           => r_reset,
+            rst           => r_sys_reset,
             mst_cmd_valid => s_cpu_dbus_cmd_valid,
             mst_cmd_ready => s_cpu_dbus_cmd_ready,
             mst_cmd_addr  => std_logic_vector(s_cpu_dbus_cmd_addr),
@@ -306,7 +328,7 @@ begin
             pipeline_rsp  => true )
         port map (
             clk           => clk_main,
-            rst           => r_reset,
+            rst           => r_sys_reset,
             mst_cmd_valid => s_sysbus_slv_input(1).cmd_valid,
             mst_cmd_ready => s_sysbus_slv_output(1).cmd_ready,
             mst_cmd_addr  => s_sysbus_slv_input(1).cmd_addr,
@@ -325,7 +347,7 @@ begin
     inst_gpio_led: entity work.gpio
         port map (
             clk           => clk_main,
-            rst           => r_reset,
+            rst           => r_sys_reset,
             gpio_i        => (others => '0'),
             gpio_o        => s_gpio_led_o,
             gpio_t        => open,
@@ -335,7 +357,7 @@ begin
     inst_gpio1: entity work.gpio
         port map (
             clk           => clk_main,
-            rst           => r_reset,
+            rst           => r_sys_reset,
             gpio_i        => s_gpio1_i,
             gpio_o        => s_gpio1_o,
             gpio_t        => s_gpio1_t,
@@ -345,7 +367,7 @@ begin
     inst_gpio2: entity work.gpio
         port map (
             clk           => clk_main,
-            rst           => r_reset,
+            rst           => r_sys_reset,
             gpio_i        => s_gpio2_i,
             gpio_o        => s_gpio2_o,
             gpio_t        => s_gpio2_t,
@@ -361,7 +383,7 @@ begin
             bit_period    => 868 )  -- 115200 bps at 100 MHz
         port map (
             clk           => clk_main,
-            rst           => r_reset,
+            rst           => r_sys_reset,
             uart_rx       => s_uart_rx,
             uart_tx       => s_uart_tx,
             interrupt     => s_uart_interrupt,
@@ -369,9 +391,30 @@ begin
             slv_output    => s_devbus_slv_output(3));
 
     --
+    -- JTAG debug bridge.
+    --
+
+    inst_jtag_dbg: entity work.jtag_dbg
+        port map (
+            clk           => clk_main,
+            rst           => r_reset,
+            jtag_drck     => s_jtag_drck,
+            jtag_capture  => s_jtag_capture,
+            jtag_shift    => s_jtag_shift,
+            jtag_tdi      => s_jtag_tdi,
+            jtag_tdo      => s_jtag_tdo,
+            dbg_cmd_valid => s_cpu_dbg_cmd_valid,
+            dbg_cmd_ready => s_cpu_dbg_cmd_ready,
+            dbg_cmd_write => s_cpu_dbg_cmd_write,
+            dbg_cmd_addr  => s_cpu_dbg_cmd_addr,
+            dbg_cmd_wdata => s_cpu_dbg_cmd_wdata,
+            dbg_rsp_rdata => s_cpu_dbg_rsp_rdata );
+
+    --
     -- Reset generator.
     --
 
+    -- Main reset.
     process (clk_main, s_mmcm_locked) is
     begin
         if s_mmcm_locked = '0' then
@@ -380,6 +423,26 @@ begin
         elsif rising_edge(clk_main) then
             r_rstn_shift    <= "1" & r_rstn_shift(r_rstn_shift'high downto 1);
             r_reset         <= not r_rstn_shift(0);
+        end if;
+    end process;
+
+    -- Separate reset for CPU and system bus.
+    process (clk_main, r_reset) is
+    begin
+        if r_reset = '1' then
+            -- Reset system bus on the main reset.
+            r_sys_reset <= '1';
+            r_sys_rstn_shift <= (others => '0');
+        elsif rising_edge(clk_main) then
+            if s_cpu_dbg_reset_out = '1' then
+                -- Reset system bus on request from debugger.
+                r_sys_reset <= '1';
+                r_sys_rstn_shift <= (others => '0');
+            else
+                -- Release system bus reset.
+                r_sys_rstn_shift <= "1" & r_sys_rstn_shift(r_sys_rstn_shift'high downto 1);
+                r_sys_reset <= not r_sys_rstn_shift(0);
+            end if;
         end if;
     end process;
 

@@ -200,7 +200,8 @@ to target small embedded systems with limited RAM.
 
 ## Step 5: Build GCC with C++ support
 
-This step rebuilds GCC with support for C and C++.
+This step is optional.
+It can be skipped if you don't need a C++ compiler.
 
 The C++ standard library is built without support for exceptions.
 This means that any situation that would normally cause the standard library
@@ -232,7 +233,59 @@ to throw an exception, will instead abort the program (by calling `abort()`).
    ```
 
 
-## Usage
+## Step 6: Build GDB
+
+This step is optional.
+It can be skipped if you don't want remote debugging with GDB.
+
+ - Download GDB 10.1:
+   ```
+   $ wget https://ftp.gnu.org/gnu/gdb/gdb-10.1.tar.xz
+   ```
+
+ - Build GDB:
+   ```
+   $ tar xf gdb-10.1.tar.xz
+   $ mkdir b-gdb
+   $ cd b-gdb
+   $ ../gdb-10.1/configure \
+         --target=riscv32-none-elf \
+         --prefix=/opt/riscv32_toolchain
+   $ make
+   $ make install
+   ```
+
+
+## Step 7: Build OpenOCD
+
+This step is optional.
+It can be skipped if you don't want remote debugging with GDB.
+
+The SpinalHDL team maintains a special VexRiscv fork of OpenOCD.
+This fork has functionality to access the VexRiscv debug port.
+
+ - Clone the repository containing the VexRiscv fork of OpenOCD:
+   ```
+   $ git clone https://github.com/SpinalHDL/openocd_riscv.git
+   ```
+
+   Note: I used commit 33f5b0815ac5ea2287c6d432a3a8bfb2187256d9.
+
+ - Build OpenOCD:
+   ```
+   $ cd openocd_riscv
+   $ ./bootstrap  # first run may fail, run it again
+   $ ./bootstrap
+   $ ./configure \
+         --prefix=/opt/riscv32_toolchain \
+         --enable-ftdi \
+         --enable-dummy
+   $ make
+   $ make install
+   ```
+
+
+## Using the compiler
 
 The toolchain can be used as a freestanding C compiler to build applications
 that do not use the standard C library. To do this, add the compiler flag
@@ -287,6 +340,47 @@ For example:
 ```
 $ riscv32-none-elf-g++ -specs=picolibc.specs -Wall -Os -o hello.elf hello.cpp
 ```
+
+
+## Remote debugging with GDB
+
+Remote debugging on VexRiscv is possible with GDB and OpenOCD.
+The VexRiscv fork of OpenOCD is required; the plain OpenOCD code
+does not support the non-standard debug protocol of VexRiscv.
+
+OpenOCD requires a configuration file to set up the JTAG adapter
+and the VexRiscv target.
+For an example config file, see [vexriscv/openocd.cfg](vexriscv/openocd.cfg).
+This file needs to be modified for your specific type of JTAG adapter.
+
+OpenOCD also needs the file `cpu0.yaml`, created by the VexRiscv framework
+while it generates VHDL code.
+
+ - Start the VexRiscv design on the FPGA board and make sure
+   the JTAG adapter is connected.
+   If Vivado *Hardware Managare* is still open, close it to make the JTAG
+   adapter available for OpenOCD.
+
+ - Start OpenOCD:
+   ```
+   $ cd riscv_test/vexriscv
+   $ openocd
+   ```
+   OpenOCD should recognize the JTAG tap device, then halt the processor,
+   open a GDB server on port 3333 and keep running.
+
+ - Start GDB and connect to the remote:
+   ```
+   $ riscv32-none-elf-gdb
+   (gdb) target extended-remote localhost:3333
+   (gdb) monitor reset halt
+   ```
+
+ - Load a program and run it:
+   ```
+   (gdb) load hello.elf
+   (gdb) cont
+   ```
 
 
 ## Indication of code size
