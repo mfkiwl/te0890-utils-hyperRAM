@@ -856,8 +856,6 @@ architecture arch of VexRiscv is
   attribute syn_keep : boolean;
 
   signal memory_MEMORY_READ_DATA : std_logic_vector(31 downto 0);
-  signal execute_BRANCH_CALC : unsigned(31 downto 0);
-  signal execute_BRANCH_DO : std_logic;
   signal execute_SHIFT_RIGHT : std_logic_vector(31 downto 0);
   signal writeBack_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
   signal execute_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
@@ -914,8 +912,8 @@ architecture arch of VexRiscv is
   signal memory_PC : unsigned(31 downto 0);
   signal execute_DO_EBREAK : std_logic;
   signal decode_IS_EBREAK : std_logic;
-  signal memory_BRANCH_CALC : unsigned(31 downto 0);
-  signal memory_BRANCH_DO : std_logic;
+  signal execute_BRANCH_CALC : unsigned(31 downto 0);
+  signal execute_BRANCH_DO : std_logic;
   signal execute_PC : unsigned(31 downto 0);
   signal execute_PREDICTION_HAD_BRANCHED2 : std_logic;
   signal execute_RS1 : std_logic_vector(31 downto 0);
@@ -1079,6 +1077,9 @@ architecture arch of VexRiscv is
   signal CsrPlugin_allowException : std_logic;
   signal BranchPlugin_jumpInterface_valid : std_logic;
   signal BranchPlugin_jumpInterface_payload : unsigned(31 downto 0);
+  signal BranchPlugin_branchExceptionPort_valid : std_logic;
+  signal BranchPlugin_branchExceptionPort_payload_code : unsigned(3 downto 0);
+  signal BranchPlugin_branchExceptionPort_payload_badAddr : unsigned(31 downto 0);
   signal IBusSimplePlugin_injectionPort_valid : std_logic;
   signal IBusSimplePlugin_injectionPort_ready : std_logic;
   signal IBusSimplePlugin_injectionPort_payload : std_logic_vector(31 downto 0);
@@ -1392,8 +1393,6 @@ architecture arch of VexRiscv is
   signal execute_to_memory_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
   signal memory_to_writeBack_REGFILE_WRITE_DATA : std_logic_vector(31 downto 0);
   signal execute_to_memory_SHIFT_RIGHT : std_logic_vector(31 downto 0);
-  signal execute_to_memory_BRANCH_DO : std_logic;
-  signal execute_to_memory_BRANCH_CALC : unsigned(31 downto 0);
   signal memory_to_writeBack_MEMORY_READ_DATA : std_logic_vector(31 downto 0);
   signal zz_143 : unsigned(2 downto 0);
   signal execute_CsrPlugin_csr_768 : std_logic;
@@ -1616,8 +1615,6 @@ begin
   end process;
 
   memory_MEMORY_READ_DATA <= dBus_rsp_data;
-  execute_BRANCH_CALC <= unsigned(pkg_cat(std_logic_vector(pkg_extract(execute_BranchPlugin_branchAdder,31,1)),std_logic_vector(pkg_unsigned("0"))));
-  execute_BRANCH_DO <= (pkg_toStdLogic(execute_PREDICTION_HAD_BRANCHED2 /= execute_BRANCH_COND_RESULT) or execute_BranchPlugin_missAlignedTarget);
   execute_SHIFT_RIGHT <= std_logic_vector(pkg_extract(pkg_shiftRight(signed(pkg_cat(pkg_toStdLogicVector((pkg_toStdLogic(execute_SHIFT_CTRL = ShiftCtrlEnum_defaultEncoding_SRA_1) and pkg_extract(execute_FullBarrelShifterPlugin_reversed,31))),execute_FullBarrelShifterPlugin_reversed)),execute_FullBarrelShifterPlugin_amplitude),31,0));
   writeBack_REGFILE_WRITE_DATA <= memory_to_writeBack_REGFILE_WRITE_DATA;
   execute_REGFILE_WRITE_DATA <= zz_106;
@@ -1658,8 +1655,8 @@ begin
   memory_PC <= execute_to_memory_PC;
   execute_DO_EBREAK <= decode_to_execute_DO_EBREAK;
   decode_IS_EBREAK <= pkg_extract(pkg_extract(zz_94,25,25),0);
-  memory_BRANCH_CALC <= execute_to_memory_BRANCH_CALC;
-  memory_BRANCH_DO <= execute_to_memory_BRANCH_DO;
+  execute_BRANCH_CALC <= unsigned(pkg_cat(std_logic_vector(pkg_extract(execute_BranchPlugin_branchAdder,31,1)),std_logic_vector(pkg_unsigned("0"))));
+  execute_BRANCH_DO <= (pkg_toStdLogic(execute_PREDICTION_HAD_BRANCHED2 /= execute_BRANCH_COND_RESULT) or execute_BranchPlugin_missAlignedTarget);
   execute_PC <= decode_to_execute_PC;
   execute_PREDICTION_HAD_BRANCHED2 <= decode_to_execute_PREDICTION_HAD_BRANCHED2;
   execute_RS1 <= decode_to_execute_RS1;
@@ -1822,9 +1819,9 @@ begin
   execute_MEMORY_ENABLE <= decode_to_execute_MEMORY_ENABLE;
   execute_ALIGNEMENT_FAULT <= ((pkg_toStdLogic(zz_157 = pkg_unsigned("10")) and pkg_toStdLogic(pkg_extract(zz_156,1,0) /= pkg_unsigned("00"))) or (pkg_toStdLogic(zz_157 = pkg_unsigned("01")) and pkg_toStdLogic(pkg_extract(zz_156,0,0) /= pkg_unsigned("0"))));
   decode_BRANCH_CTRL <= zz_51;
-  process(memory_FORMAL_PC_NEXT,BranchPlugin_jumpInterface_valid,BranchPlugin_jumpInterface_payload)
+  process(execute_FORMAL_PC_NEXT,BranchPlugin_jumpInterface_valid,BranchPlugin_jumpInterface_payload)
   begin
-    zz_52 <= memory_FORMAL_PC_NEXT;
+    zz_52 <= execute_FORMAL_PC_NEXT;
     if BranchPlugin_jumpInterface_valid = '1' then
       zz_52 <= BranchPlugin_jumpInterface_payload;
     end if;
@@ -1904,9 +1901,12 @@ begin
     end if;
   end process;
 
-  process(execute_arbitration_isFlushed)
+  process(BranchPlugin_branchExceptionPort_valid,execute_arbitration_isFlushed)
   begin
     execute_arbitration_removeIt <= pkg_toStdLogic(false);
+    if BranchPlugin_branchExceptionPort_valid = '1' then
+      execute_arbitration_removeIt <= pkg_toStdLogic(true);
+    end if;
     if execute_arbitration_isFlushed = '1' then
       execute_arbitration_removeIt <= pkg_toStdLogic(true);
     end if;
@@ -1922,9 +1922,15 @@ begin
     end if;
   end process;
 
-  process(zz_165,zz_166)
+  process(BranchPlugin_branchExceptionPort_valid,BranchPlugin_jumpInterface_valid,zz_165,zz_166)
   begin
     execute_arbitration_flushNext <= pkg_toStdLogic(false);
+    if BranchPlugin_branchExceptionPort_valid = '1' then
+      execute_arbitration_flushNext <= pkg_toStdLogic(true);
+    end if;
+    if BranchPlugin_jumpInterface_valid = '1' then
+      execute_arbitration_flushNext <= pkg_toStdLogic(true);
+    end if;
     if zz_165 = '1' then
       if zz_166 = '1' then
         execute_arbitration_flushNext <= pkg_toStdLogic(true);
@@ -1953,13 +1959,10 @@ begin
   end process;
 
   memory_arbitration_flushIt <= pkg_toStdLogic(false);
-  process(DBusSimplePlugin_memoryExceptionPort_valid,BranchPlugin_jumpInterface_valid)
+  process(DBusSimplePlugin_memoryExceptionPort_valid)
   begin
     memory_arbitration_flushNext <= pkg_toStdLogic(false);
     if DBusSimplePlugin_memoryExceptionPort_valid = '1' then
-      memory_arbitration_flushNext <= pkg_toStdLogic(true);
-    end if;
-    if BranchPlugin_jumpInterface_valid = '1' then
       memory_arbitration_flushNext <= pkg_toStdLogic(true);
     end if;
   end process;
@@ -2515,11 +2518,20 @@ begin
   zz_92 <= (CsrPlugin_mip_MSIP and CsrPlugin_mie_MSIE);
   zz_93 <= (CsrPlugin_mip_MEIP and CsrPlugin_mie_MEIE);
   CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_decode <= pkg_toStdLogic(false);
-  CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_execute <= pkg_toStdLogic(false);
   CsrPlugin_exceptionPortCtrl_exceptionTargetPrivilegeUncapped <= pkg_unsigned("11");
   CsrPlugin_exceptionPortCtrl_exceptionTargetPrivilege <= pkg_mux(pkg_toStdLogic(CsrPlugin_privilege < CsrPlugin_exceptionPortCtrl_exceptionTargetPrivilegeUncapped),CsrPlugin_exceptionPortCtrl_exceptionTargetPrivilegeUncapped,CsrPlugin_privilege);
   CsrPlugin_exceptionPortCtrl_exceptionValids_decode <= CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_decode;
-  CsrPlugin_exceptionPortCtrl_exceptionValids_execute <= CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_execute;
+  process(CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_execute,BranchPlugin_branchExceptionPort_valid,execute_arbitration_isFlushed)
+  begin
+    CsrPlugin_exceptionPortCtrl_exceptionValids_execute <= CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_execute;
+    if BranchPlugin_branchExceptionPort_valid = '1' then
+      CsrPlugin_exceptionPortCtrl_exceptionValids_execute <= pkg_toStdLogic(true);
+    end if;
+    if execute_arbitration_isFlushed = '1' then
+      CsrPlugin_exceptionPortCtrl_exceptionValids_execute <= pkg_toStdLogic(false);
+    end if;
+  end process;
+
   process(CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_memory,DBusSimplePlugin_memoryExceptionPort_valid,memory_arbitration_isFlushed)
   begin
     CsrPlugin_exceptionPortCtrl_exceptionValids_memory <= CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_memory;
@@ -3170,8 +3182,18 @@ begin
   end process;
 
   execute_BranchPlugin_branchAdder <= (execute_BranchPlugin_branch_src1 + execute_BranchPlugin_branch_src2);
-  BranchPlugin_jumpInterface_valid <= ((memory_arbitration_isValid and memory_BRANCH_DO) and (not pkg_toStdLogic(false)));
-  BranchPlugin_jumpInterface_payload <= memory_BRANCH_CALC;
+  BranchPlugin_jumpInterface_valid <= ((execute_arbitration_isValid and execute_BRANCH_DO) and (not pkg_toStdLogic(false)));
+  BranchPlugin_jumpInterface_payload <= execute_BRANCH_CALC;
+  process(execute_arbitration_isValid,execute_BRANCH_DO,execute_BRANCH_CALC)
+  begin
+    BranchPlugin_branchExceptionPort_valid <= (execute_arbitration_isValid and (execute_BRANCH_DO and pkg_extract(execute_BRANCH_CALC,1)));
+    if pkg_toStdLogic(false) = '1' then
+      BranchPlugin_branchExceptionPort_valid <= pkg_toStdLogic(false);
+    end if;
+  end process;
+
+  BranchPlugin_branchExceptionPort_payload_code <= pkg_unsigned("0000");
+  BranchPlugin_branchExceptionPort_payload_badAddr <= execute_BRANCH_CALC;
   IBusSimplePlugin_decodePrediction_rsp_wasWrong <= BranchPlugin_jumpInterface_valid;
   process(debug_bus_cmd_valid,zz_178,debug_bus_cmd_payload_wr,IBusSimplePlugin_injectionPort_ready)
   begin
@@ -3370,6 +3392,7 @@ begin
       CsrPlugin_mie_MEIE <= pkg_toStdLogic(false);
       CsrPlugin_mie_MTIE <= pkg_toStdLogic(false);
       CsrPlugin_mie_MSIE <= pkg_toStdLogic(false);
+      CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_execute <= pkg_toStdLogic(false);
       CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_memory <= pkg_toStdLogic(false);
       CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_writeBack <= pkg_toStdLogic(false);
       CsrPlugin_interrupt_valid <= pkg_toStdLogic(false);
@@ -3480,8 +3503,13 @@ begin
       end if;
       assert (not (((dBus_rsp_ready and memory_MEMORY_ENABLE) and memory_arbitration_isValid) and memory_arbitration_isStuck)) = '1' report "DBusSimplePlugin doesn't allow memory stage stall when read happend"  severity FAILURE;
       assert (not (((writeBack_arbitration_isValid and writeBack_MEMORY_ENABLE) and (not writeBack_MEMORY_STORE)) and writeBack_arbitration_isStuck)) = '1' report "DBusSimplePlugin doesn't allow writeback stage stall when read happend"  severity FAILURE;
+      if (not execute_arbitration_isStuck) = '1' then
+        CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_execute <= pkg_toStdLogic(false);
+      else
+        CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_execute <= CsrPlugin_exceptionPortCtrl_exceptionValids_execute;
+      end if;
       if (not memory_arbitration_isStuck) = '1' then
-        CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_memory <= pkg_toStdLogic(false);
+        CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_memory <= (CsrPlugin_exceptionPortCtrl_exceptionValids_execute and (not execute_arbitration_isStuck));
       else
         CsrPlugin_exceptionPortCtrl_exceptionValidsRegs_memory <= CsrPlugin_exceptionPortCtrl_exceptionValids_memory;
       end if;
@@ -3617,6 +3645,10 @@ begin
       if writeBack_arbitration_isFiring = '1' then
         CsrPlugin_minstret <= (CsrPlugin_minstret + pkg_unsigned("0000000000000000000000000000000000000000000000000000000000000001"));
       end if;
+      if BranchPlugin_branchExceptionPort_valid = '1' then
+        CsrPlugin_exceptionPortCtrl_exceptionContext_code <= BranchPlugin_branchExceptionPort_payload_code;
+        CsrPlugin_exceptionPortCtrl_exceptionContext_badAddr <= BranchPlugin_branchExceptionPort_payload_badAddr;
+      end if;
       if DBusSimplePlugin_memoryExceptionPort_valid = '1' then
         CsrPlugin_exceptionPortCtrl_exceptionContext_code <= DBusSimplePlugin_memoryExceptionPort_payload_code;
         CsrPlugin_exceptionPortCtrl_exceptionContext_badAddr <= DBusSimplePlugin_memoryExceptionPort_payload_badAddr;
@@ -3671,10 +3703,10 @@ begin
         decode_to_execute_FORMAL_PC_NEXT <= zz_53;
       end if;
       if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_FORMAL_PC_NEXT <= execute_FORMAL_PC_NEXT;
+        execute_to_memory_FORMAL_PC_NEXT <= zz_52;
       end if;
       if (not writeBack_arbitration_isStuck) = '1' then
-        memory_to_writeBack_FORMAL_PC_NEXT <= zz_52;
+        memory_to_writeBack_FORMAL_PC_NEXT <= memory_FORMAL_PC_NEXT;
       end if;
       if (not execute_arbitration_isStuck) = '1' then
         decode_to_execute_CSR_WRITE_OPCODE <= decode_CSR_WRITE_OPCODE;
@@ -3789,12 +3821,6 @@ begin
       end if;
       if (not memory_arbitration_isStuck) = '1' then
         execute_to_memory_SHIFT_RIGHT <= execute_SHIFT_RIGHT;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_BRANCH_DO <= execute_BRANCH_DO;
-      end if;
-      if (not memory_arbitration_isStuck) = '1' then
-        execute_to_memory_BRANCH_CALC <= execute_BRANCH_CALC;
       end if;
       if (not writeBack_arbitration_isStuck) = '1' then
         memory_to_writeBack_MEMORY_READ_DATA <= memory_MEMORY_READ_DATA;

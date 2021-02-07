@@ -7,6 +7,7 @@
  *             bypassed pipeline,
  *             rdcycle instruction.
  * Timing:     125 MHz on Spartan-7
+ * Dhrystone:  1.01 DMIPS/MHz
  *
  * To generate VHDL code:
  *  - put this file in VexRiscv/src/main/scala/vexriscv/demo/GenMyCpu.scala
@@ -65,8 +66,8 @@ object GenMyCpu extends App {
           pessimisticAddressMatch = false
         ),
         new BranchPlugin(
-          earlyBranch = false,
-          catchAddressMisaligned = false
+          earlyBranch = true,
+          catchAddressMisaligned = true
         ),
         new DebugPlugin(
           debugClockDomain = ClockDomain.current.clone(reset = Bool().setName("debugReset")),
