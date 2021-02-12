@@ -108,7 +108,7 @@ architecture arch_bram32_dualport of bram32_dualport is
         return result;
     end function;
 
-    shared variable mem: mem_type := init_mem(init_file);
+    signal mem: mem_type := init_mem(init_file);
 
 begin
 
@@ -120,7 +120,7 @@ begin
                 if wr_a = '1' then
                     for i in 0 to 3 loop
                         if wmask_a(i) = '1' then
-                            mem(to_integer(unsigned(addr_a)))(8*i+7 downto 8*i) :=
+                            mem(to_integer(unsigned(addr_a)))(8*i+7 downto 8*i) <=
                                 wdata_a(8*i+7 downto 8*i);
                         end if;
                     end loop;
