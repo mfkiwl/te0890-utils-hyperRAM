@@ -10,6 +10,9 @@
  * See <http://creativecommons.org/publicdomain/zero/1.0/>
  */
 
+#ifndef RVLIB_HARDWARE_H_
+#define RVLIB_HARDWARE_H_
+
 #include <stdint.h>
 
 
@@ -64,4 +67,4 @@ static inline uint32_t rvlib_hw_rdcycle_high(void)
     return ret;
 }
 
-/* end */
+#endif  // RVLIB_HARDWARE_H_

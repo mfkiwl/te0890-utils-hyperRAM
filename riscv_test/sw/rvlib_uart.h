@@ -10,6 +10,9 @@
  * See <http://creativecommons.org/publicdomain/zero/1.0/>
  */
 
+#ifndef RVLIB_UART_H_
+#define RVLIB_UART_H_
+
 #include <stdint.h>
 
 /* Send a character through the UART. */
@@ -21,4 +24,4 @@ int rvlib_uart_recv_byte(uint32_t base_addr);
 /* Write a byte to the default UART. */
 int rvlib_putchar(int c);
 
-/* end */
+#endif  // RVLIB_UART_H_

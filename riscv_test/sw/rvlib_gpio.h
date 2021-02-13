@@ -10,6 +10,9 @@
  * See <http://creativecommons.org/publicdomain/zero/1.0/>
  */
 
+#ifndef RVLIB_GPIO_H_
+#define RVLIB_GPIO_H_
+
 #include <stdint.h>
 
 
@@ -58,6 +61,5 @@ static inline void rvlib_set_green_led(int state)
                                   state);
 }
 
-#endif
-
-/* end */
+#endif  // RVSYS_ADDR_LEDS
+#endif  // RVLIB_GPIO_H_

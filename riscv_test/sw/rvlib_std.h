@@ -14,6 +14,9 @@
  * See <http://creativecommons.org/publicdomain/zero/1.0/>
  */
 
+#ifndef RVLIB_STD_H_
+#define RVLIB_STD_H_
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -86,4 +89,4 @@ void memzero_aligned(uint32_t *dest, size_t n);
  */
 _Noreturn void _Exit(int exit_code);
 
-/* end */
+#endif  // RVLIB_STD_H_

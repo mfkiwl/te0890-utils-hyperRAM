@@ -10,15 +10,16 @@
  * See <http://creativecommons.org/publicdomain/zero/1.0/>
  */
 
-#include <stdint.h>
+#ifndef RVLIB_TIME_H_
+#define RVLIB_TIME_H_
 
+#include <stdint.h>
 
 /* Delay for "usec" microseconds, then return 0. */
 int usleep(unsigned long usec);
-
 
 /* Return a monotonic CPU cycle counter.
    This counter starts at an arbitrary value at boot. */
 uint64_t get_cycle_counter(void);
 
-/* end */
+#endif  // RVLIB_TIME_H_
