@@ -60,7 +60,6 @@ architecture arch_top of riscv_test_top is
     signal r_cpu_ibus_rsp_valid:    std_logic;
     signal s_cpu_ibus_rsp_error:    std_logic;
     signal s_cpu_ibus_rsp_rdata:    std_logic_vector(31 downto 0);
-    signal s_cpu_int_timer:         std_logic;
     signal s_cpu_int_external:      std_logic;
     signal s_cpu_int_soft:          std_logic;
     signal s_cpu_dbus_cmd_valid:    std_logic;
@@ -83,8 +82,8 @@ architecture arch_top of riscv_test_top is
     signal r_sysbus_bram_rsp_valid: std_logic;
     signal s_sysbus_slv_input:      bus_slv_input_array(0 to 1);
     signal s_sysbus_slv_output:     bus_slv_output_array(0 to 1);
-    signal s_devbus_slv_input:      bus_slv_input_array(0 to 3);
-    signal s_devbus_slv_output:     bus_slv_output_array(0 to 3);
+    signal s_devbus_slv_input:      bus_slv_input_array(0 to 4);
+    signal s_devbus_slv_output:     bus_slv_output_array(0 to 4);
 
     signal s_gpio_led_o:            std_logic_vector(31 downto 0);
     signal s_gpio1_i:               std_logic_vector(31 downto 0);
@@ -97,6 +96,7 @@ architecture arch_top of riscv_test_top is
     signal s_uart_tx:               std_logic;
     signal s_uart_rx:               std_logic;
     signal s_uart_interrupt:        std_logic;
+    signal s_timer_interrupt:       std_logic;
 
     signal s_jtag_drck:             std_logic;
     signal s_jtag_capture:          std_logic;
@@ -204,7 +204,7 @@ begin
             iBus_rsp_valid          => r_cpu_ibus_rsp_valid,
             iBus_rsp_payload_error  => s_cpu_ibus_rsp_error,
             iBus_rsp_payload_inst   => s_cpu_ibus_rsp_rdata,
-            timerInterrupt          => s_cpu_int_timer,
+            timerInterrupt          => s_timer_interrupt,
             externalInterrupt       => s_cpu_int_external,
             softwareInterrupt       => s_cpu_int_soft,
             debug_bus_cmd_valid           => s_cpu_dbg_cmd_valid,
@@ -310,12 +310,13 @@ begin
     --   0xf0000000 = GPIO controller for on-board LEDs
     --   0xf0001000 = GPIO controller for pins A..D
     --   0xf0002000 = GPIO controller for pins E..F
+    --   0xf0008000 = Timer controller
     --   0xf0010000 = UART controller
     --
 
     inst_devbus_ctrl: entity work.bus_ctrl
         generic map (
-            num_slaves    => 4,
+            num_slaves    => 5,
             slv_info      => ( 0 => ( addr_start => rvsys_addr_leds,
                                       addr_size  => x"00001000" ),
                                1 => ( addr_start => rvsys_addr_gpio1,
@@ -323,6 +324,8 @@ begin
                                2 => ( addr_start => rvsys_addr_gpio2,
                                       addr_size  => x"00001000" ),
                                3 => ( addr_start => rvsys_addr_uart,
+                                      addr_size  => x"00001000" ),
+                               4 => ( addr_start => rvsys_addr_timer,
                                       addr_size  => x"00001000" )),
             pipeline_cmd  => true,
             pipeline_rsp  => true )
@@ -389,6 +392,18 @@ begin
             interrupt     => s_uart_interrupt,
             slv_input     => s_devbus_slv_input(3),
             slv_output    => s_devbus_slv_output(3));
+
+    --
+    -- Timer.
+    --
+
+    inst_timer: entity work.timer
+        port map (
+            clk           => clk_main,
+            rst           => r_sys_reset,
+            interrupt     => s_timer_interrupt,
+            slv_input     => s_devbus_slv_input(4),
+            slv_output    => s_devbus_slv_output(4));
 
     --
     -- JTAG debug bridge.
