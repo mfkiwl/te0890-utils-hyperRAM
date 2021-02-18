@@ -14,6 +14,12 @@
 #include "rvlib_hardware.h"
 
 
+#define RVLIB_TIMER_REG_MTIME_LO    0
+#define RVLIB_TIMER_REG_MTIME_HI    4
+#define RVLIB_TIMER_REG_MTIMECMP_LO 8
+#define RVLIB_TIMER_REG_MTIMECMP_HI 12
+
+
 /* Delay for "usec" microseconds, then return 0. */
 int usleep(unsigned long usec)
 {
@@ -50,8 +56,7 @@ int usleep(unsigned long usec)
 }
 
 
-/* Return a monotonic CPU cycle counter.
-   This counter starts at an arbitrary value at boot. */
+/* Return the current value of the "rdcycle" monotonic CPU cycle counter. */
 uint64_t get_cycle_counter(void)
 {
     uint32_t cyc_hi0 = rvlib_hw_rdcycle_high();
@@ -64,6 +69,50 @@ uint64_t get_cycle_counter(void)
         cyc_lo = 0;
     }
     return (((uint64_t)cyc_hi) << 32) | cyc_lo;
+}
+
+
+/*
+ * Return the current value of the "mtime" register.
+ * This register increments at the rate of the CPU frequency.
+ *
+ * Note this timer is separate from the "rdcycle" counter.
+ */
+uint64_t rvlib_timer_get_counter(void)
+{
+    uint32_t mtime_hi0, mtime_lo, mtime_hi;
+    mtime_hi0 = rvlib_hw_read_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIME_HI);
+    mtime_lo = rvlib_hw_read_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIME_LO);
+    mtime_hi = rvlib_hw_read_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIME_HI);
+    if (mtime_hi != mtime_hi0) {
+        /* Upper 32 bits changed while reading the lower 32 bits.
+           Set lower 32 bits to zero to construct a value that occurred
+           some time between the first and last read of the register. */
+        mtime_lo = 0;
+    }
+    return (((uint64_t)mtime_hi) << 32) | mtime_lo;
+}
+
+
+/* Reset the "mtime" register to zero. */
+void rvlib_timer_reset_counter(void)
+{
+    rvlib_hw_write_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIME_LO, 0);
+    rvlib_hw_write_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIME_HI, 0);
+}
+
+
+/* Set the value of the "mtimecmp" register. */
+void rvlib_timer_set_timecmp(uint64_t timecmp)
+{
+    /* Temporarily set the low word to the maximum value to avoid spurious
+       interrupts while updating the high word. */
+    rvlib_hw_write_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIMECMP_LO,
+                       UINT32_MAX);
+    rvlib_hw_write_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIMECMP_HI,
+                       timecmp >> 32);
+    rvlib_hw_write_reg(RVSYS_ADDR_TIMER + RVLIB_TIMER_REG_MTIMECMP_LO,
+                       (uint32_t)timecmp);
 }
 
 /* end */

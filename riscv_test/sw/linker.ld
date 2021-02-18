@@ -57,14 +57,25 @@ SECTIONS {
 
     .text ORIGIN(ram) : {
 
-        /* First part of start up code must be at 0x80000000. */
+        /*
+         * First part of startup code must be at 0x80000000.
+         */
         KEEP( *(.text.init.enter) )
 
-	/* Trap vector must be at 0x80000020. */
-	. = _start + 0x20;
-        KEEP( *(.text.trap_vector) )
+        /*
+         * Trap vector must be at 0x80000020.
+         * The trap handling code is only emitted if the application
+         * implements interrupt handling.
+         * Otherwise the dummy handler will take its place.
+         */
+        . = _start + 0x20;
+        *(.text.trap_vector)
+        KEEP( *(.text.trap_dummy) )
 
-	/* All other application code. */
+        /* Rest of the startup code. */
+        *(.text.startup)
+
+        /* All other application code. */
         KEEP( *(.init .init.*) )
         *(.text .text.*)
         *(.gnu.linkonce.t.*)
@@ -164,7 +175,7 @@ SECTIONS {
         . = ALIGN(16);
 
         /* The startup code uses __stack to initialize the stack pointer. */
-	PROVIDE( __stack = . );
+        PROVIDE( __stack = . );
     } >ram
 
     /* Discard C++ exception handling information. */

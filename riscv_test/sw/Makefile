@@ -39,7 +39,7 @@ LDLIBS   = $(LDLIBS_$(ccmode))
 
 # Default target.
 .PHONY: all
-all: bootmon.hex hello.hex hello_picolibc.hex hello_cpp.hex
+all: bootmon.hex hello.hex test_interrupt.hex hello_picolibc.hex hello_cpp.hex
 
 
 #
@@ -48,6 +48,7 @@ all: bootmon.hex hello.hex hello_picolibc.hex hello_cpp.hex
 
 RVLIB_HDRS = rvlib_std.h \
              rvlib_hardware.h \
+             rvlib_interrupt.h \
              rvlib_time.h \
              rvlib_gpio.h \
              rvlib_uart.h
@@ -108,6 +109,27 @@ hello.elf: $(HELLO_OBJS) linker.ld
 
 # Convert program image to HEX file.
 hello.hex: hello.elf
+	$(OBJCOPY) -O ihex $< $@
+
+
+#
+# ---- Rules to build the test_interrupt program ----
+#
+
+TESTINT_OBJS = test_interrupt.o $(RVLIB_OBJS)
+
+# Build the program in freestanding mode.
+test_interrupt.elf test_interrupt.o: ccmode = freestanding
+
+# Compile main program.
+test_interrupt.o: test_interrupt.c $(RVLIB_HDRS)
+
+# Link final program image.
+test_interrupt.elf: $(TESTINT_OBJS) linker.ld
+	$(CC) $(LDFLAGS) -T linker.ld -o $@ $(TESTINT_OBJS) $(LDLIBS)
+
+# Convert program image to HEX file.
+test_interrupt.hex: test_interrupt.elf
 	$(OBJCOPY) -O ihex $< $@
 
 
@@ -192,9 +214,5 @@ hello_cpp.hex: hello_cpp.elf
 # Cleanup.
 .PHONY: clean
 clean:
-	$(RM) -- bootmon.elf bootmon.hex 
-	$(RM) -- hello.elf hello.hex
-	$(RM) -- hello_picolibc.elf hello_picolibc.hex
-	$(RM) -- hello_cpp.elf hello_cpp.hex
-	$(RM) -- *.o
+	$(RM) -- *.o *.elf *.hex
 

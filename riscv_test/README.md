@@ -39,12 +39,12 @@ The following seems to be working nicely:
  - 64 kByte RAM
  - UART (serial port)
  - GPIO and LEDs
+ - timer
  - running small C programs
+ - interrupt handling
  - remote debugging with GDB
 
 The following is on my TODO list (and may or may not get done at some point):
- - interrupts
- - timer peripheral
  - access to TE0890 flash chip
  - access to HyperRAM
 
