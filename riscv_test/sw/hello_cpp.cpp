@@ -86,6 +86,10 @@ float Circle::area() const
 }
 
 
+// Test static initialization.
+Circle circle(9);
+
+
 int main()
 {
     printf("RISC-V test with C++\n");
